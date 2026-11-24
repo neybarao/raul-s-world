@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
+import MenuScene from './scenes/MenuScene.js';
 import { GRAVITY } from './config.js';
 import { setupPWA, setupFullscreen } from './pwa.js';
 
@@ -28,7 +29,7 @@ const game = new Phaser.Game({
     default: 'arcade',
     arcade: { gravity: { y: GRAVITY }, debug: false },
   },
-  scene: [BootScene, GameScene, UIScene],
+  scene: [BootScene, MenuScene, GameScene, UIScene],
 });
 
 function fit() {

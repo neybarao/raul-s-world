@@ -10,6 +10,7 @@ export default class UIScene extends Phaser.Scene {
 
   create() {
     this.hud = { hearts: 3, max: 3, coins: 0 };
+    this.mode = this.registry.get('mode') || 'menu';
     this.overlay = null;
     this.paused = false;
 
@@ -30,14 +31,16 @@ export default class UIScene extends Phaser.Scene {
     const ev = this.game.events;
     const onHud = (h) => { this.hud = h; this.drawHud(); };
     const onLayout = () => this.relayout();
-    const onWin = (d) => this.showOverlay('Fase completa!', `Moedas: ${d.coins} de ${d.total}`, 'Toque para jogar de novo');
-    const onOver = () => this.time.delayedCall(1800, () => this.showOverlay('Ai, ai, ai!', 'O Raul se machucou', 'Toque para tentar de novo', { light: true }));
+    const onWin = (d) => this.showOverlay('Fase completa!', `Moedas: ${d.coins} de ${d.total}`, 'Toque para escolher outra fase', { kind: 'win' });
+    const onOver = () => this.time.delayedCall(1800, () => this.mode === 'game' && this.showOverlay('Ai, ai, ai!', 'O Raul se machucou', 'Toque para tentar de novo', { light: true, menu: true }));
+    const onMode = (m) => { this.mode = m; this.paused = false; this.hideOverlay(); this.drawHud(); };
     ev.on('hud', onHud);
     ev.on('layout', onLayout);
     ev.on('level-complete', onWin);
     ev.on('game-over', onOver);
+    ev.on('mode', onMode);
     this.events.once('shutdown', () => {
-      ev.off('hud', onHud); ev.off('layout', onLayout); ev.off('level-complete', onWin); ev.off('game-over', onOver);
+      ev.off('hud', onHud); ev.off('layout', onLayout); ev.off('level-complete', onWin); ev.off('game-over', onOver); ev.off('mode', onMode);
     });
 
     const kb = this.input.keyboard;
@@ -67,6 +70,11 @@ export default class UIScene extends Phaser.Scene {
 
   drawHud() {
     if (!this.face) return;
+    // no seletor de fases o HUD some
+    const show = this.mode !== 'menu';
+    [this.face, this.faceFrame, this.coinIcon, this.coinText, this.pauseBtn, ...this.heartImgs].forEach((o) => o.setVisible(show));
+    if (this.pauseZone.input) this.pauseZone.input.enabled = show;
+    if (!show) return;
     const s = this.s;
     const m = 6 * s;
     const top0 = layout.safeTop;
@@ -228,12 +236,13 @@ export default class UIScene extends Phaser.Scene {
   // ---------- pausa e telas de mensagem ----------
 
   togglePause() {
+    if (this.mode === 'menu') return;
     if (this.overlay && !this.paused) return;
     const game = this.scene.get('Game');
     if (!this.paused) {
       this.paused = true;
       game.scene.pause();
-      this.showOverlay('Pausado', '', 'Toque para continuar');
+      this.showOverlay('Pausado', '', 'Toque para continuar', { menu: true });
     } else {
       this.paused = false;
       this.hideOverlay();
@@ -250,6 +259,13 @@ export default class UIScene extends Phaser.Scene {
     o.sub = this.add.text(0, 0, subtitle, FONT).setOrigin(0.5);
     o.hint = this.add.text(0, 0, hint, { ...FONT, color: '#ffd23f' }).setOrigin(0.5);
     o.add([o.bg, o.title, o.sub, o.hint]);
+    o.kind = opts.kind || '';
+    if (opts.menu) {
+      // botao para voltar ao seletor de fases
+      o.menuBtn = this.add.text(0, 0, '« Escolher fase', { ...FONT, backgroundColor: '#2b2a6b' }).setOrigin(0.5).setInteractive();
+      o.menuBtn.on('pointerdown', () => this.goToMenu());
+      o.add(o.menuBtn);
+    }
     this.tweens.add({ targets: o.hint, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
     o.bg.on('pointerdown', () => this.overlayAction());
     this.overlay = o;
@@ -267,6 +283,7 @@ export default class UIScene extends Phaser.Scene {
     o.title.setFontSize(16 * s).setStroke('#1b1b2a', 2 * s).setPosition(w / 2, ty);
     o.sub.setFontSize(8 * s).setStroke('#1b1b2a', s).setPosition(w / 2, ty + 18 * s);
     o.hint.setFontSize(7 * s).setStroke('#1b1b2a', s).setPosition(w / 2, ty + 34 * s);
+    if (o.menuBtn) o.menuBtn.setFontSize(7 * s).setPadding(5 * s, 3 * s).setPosition(w / 2, ty + 54 * s);
   }
 
   hideOverlay() {
@@ -277,7 +294,18 @@ export default class UIScene extends Phaser.Scene {
   overlayAction() {
     if (!this.overlay) return;
     if (this.paused) return this.togglePause();
+    const kind = this.overlay.kind;
     this.hideOverlay();
-    this.scene.get('Game').scene.restart();
+    if (kind === 'win') return this.goToMenu();
+    const game = this.scene.get('Game');
+    game.scene.restart({ level: this.registry.get('level') });
+  }
+
+  goToMenu() {
+    this.hideOverlay();
+    this.paused = false;
+    const game = this.scene.get('Game');
+    if (game.scene.isPaused()) game.scene.resume();
+    game.scene.start('Menu');
   }
 }

@@ -236,3 +236,331 @@ if __name__ == "__main__":
     make_hearts()
     make_background()
     print("ok")
+
+
+# ======================= FASES NOVAS (temas) =======================
+# Cada tema gera: tiles-<tema>.png (9 tiles), mola-<tema>.png (2 quadros 32x24)
+# e o inimigo da fase. Cores vem das fotos de ferias (paletas extraidas das fotos).
+
+THEMES = {
+    "aquario": {
+        "top": "moss", "top_cols": [(26, 92, 88), (40, 128, 110), (70, 160, 130), (120, 196, 160), (190, 230, 200)],
+        "body": "rock", "body_cols": [(34, 58, 66), (52, 84, 92), (70, 108, 112), (96, 136, 132), (140, 176, 166)],
+        "plat": "coral", "plat_cols": [(80, 60, 100), (150, 70, 120), (220, 110, 150), (250, 170, 190), (255, 220, 230)],
+    },
+    "bolinhas": {
+        "top": "foam", "top_cols": [(216, 48, 44), (246, 207, 30), (31, 69, 181), (60, 174, 70), (255, 255, 255)],
+        "body": "padding", "body_cols": [(110, 116, 128), (150, 156, 168), (184, 188, 196), (210, 214, 220), (236, 238, 242)],
+        "plat": "block", "plat_cols": [(120, 150, 40), (160, 190, 60), (190, 210, 90), (220, 232, 150), (245, 250, 210)],
+    },
+    "parque": {
+        "top": "coping", "top_cols": [(150, 160, 170), (200, 206, 212), (232, 236, 240), (248, 250, 252), (255, 255, 255)],
+        "body": "grid", "body_cols": [(40, 110, 150), (70, 160, 200), (120, 200, 228), (170, 226, 242), (230, 248, 255)],
+        "plat": "float", "plat_cols": [(150, 40, 80), (220, 90, 130), (240, 140, 170), (250, 200, 215), (255, 255, 255)],
+    },
+    "praia": {
+        "top": "sand", "top_cols": [(190, 172, 130), (214, 198, 160), (232, 222, 192), (244, 238, 216), (255, 252, 240)],
+        "body": "speckle", "body_cols": [(150, 126, 90), (178, 152, 110), (200, 178, 136), (220, 202, 164), (236, 224, 196)],
+        "plat": "wood", "plat_cols": [(90, 54, 30), (128, 80, 44), (164, 110, 64), (196, 144, 92), (226, 182, 130)],
+    },
+}
+
+
+def body_tile(style, C, rnd):
+    img = Image.new("RGBA", (T, T), C[2] + (255,))
+    d = ImageDraw.Draw(img)
+    p = img.load()
+    if style == "rock":
+        for y in range(T):
+            for x in range(T):
+                if rnd.random() < 0.18:
+                    p[x, y] = C[1] + (255,)
+        for _ in range(4):
+            x, y, r = rnd.randrange(0, T), rnd.randrange(0, T), rnd.randint(3, 6)
+            d.ellipse([x - r, y - r, x + r, y + r], fill=C[1])
+            d.ellipse([x - r, y - r, x + r - 2, y + r - 2], fill=C[3])
+            d.point((x - r + 2, y - r + 2), fill=C[4])
+    elif style == "padding":
+        d.rectangle([0, 0, T - 1, T - 1], fill=C[2])
+        d.rectangle([1, 1, T - 3, 3], fill=C[3])
+        d.line([0, T // 2, T - 1, T // 2], fill=C[1])
+        d.line([0, T // 2 + 1, T - 1, T // 2 + 1], fill=C[3])
+        d.line([T - 1, 0, T - 1, T - 1], fill=C[0])
+        d.line([T // 2, T // 2 + 2, T // 2, T - 1], fill=C[1])
+    elif style == "grid":
+        s = 8
+        for gy in range(0, T, s):
+            for gx in range(0, T, s):
+                d.rectangle([gx, gy, gx + s - 1, gy + s - 1], fill=C[2])
+                d.line([gx + 1, gy + 1, gx + s - 3, gy + 1], fill=C[3])
+                d.point((gx + 1, gy + 2), fill=C[3])
+                d.line([gx, gy + s - 1, gx + s - 1, gy + s - 1], fill=C[1])
+                d.line([gx + s - 1, gy, gx + s - 1, gy + s - 1], fill=C[1])
+                if rnd.random() < 0.15:
+                    d.point((gx + 3, gy + 3), fill=C[4])
+    elif style == "speckle":
+        for y in range(T):
+            for x in range(T):
+                r = rnd.random()
+                if r < 0.12:
+                    p[x, y] = C[1] + (255,)
+                elif r < 0.22:
+                    p[x, y] = C[3] + (255,)
+        for _ in range(2):  # conchinhas
+            x, y = rnd.randrange(3, T - 5), rnd.randrange(3, T - 4)
+            d.ellipse([x, y, x + 4, y + 3], fill=(240, 200, 200))
+            d.point((x + 2, y + 1), fill=(200, 140, 140))
+    return img
+
+
+def top_tile(theme, rnd, idx):
+    th = THEMES[theme]
+    C, style = th["top_cols"], th["top"]
+    img = body_tile(th["body"], th["body_cols"], rnd)
+    d = ImageDraw.Draw(img)
+    p = img.load()
+    if style == "moss":
+        for y in range(8):
+            d.line([0, y, T - 1, y], fill=lerp(C[3], C[1], y / 7))
+        d.line([0, 0, T - 1, 0], fill=C[4])
+        for x in range(T):
+            drop = 8 + int(2 + 2 * math.sin(x * 1.3) + rnd.random() * 2)
+            for y in range(8, drop):
+                p[x, y] = C[1] + (255,)
+            p[x, drop] = C[0] + (255,)
+        for _ in range(3):  # pedrinhas claras na areia do fundo
+            x = rnd.randrange(2, T - 4)
+            d.ellipse([x, 2, x + 3, 4], fill=C[4])
+    elif style == "foam":
+        col = C[idx % 4]
+        hi = lerp(col, (255, 255, 255), 0.45)
+        dk = lerp(col, (0, 0, 0), 0.35)
+        d.rectangle([0, 0, T - 1, 9], fill=col)
+        d.line([0, 0, T - 1, 0], fill=hi)
+        d.line([0, 1, T - 1, 1], fill=hi)
+        d.line([0, 9, T - 1, 9], fill=dk)
+        d.line([0, 10, T - 1, 10], fill=OUTLINE)
+        d.point((3, 3), fill=(255, 255, 255))
+    elif style == "coping":
+        d.rectangle([0, 0, T - 1, 7], fill=C[3])
+        d.line([0, 0, T - 1, 0], fill=C[4])
+        d.line([0, 6, T - 1, 6], fill=C[1])
+        d.line([0, 7, T - 1, 7], fill=C[0])
+        for x in (8, 24):
+            d.line([x, 1, x, 5], fill=C[2])
+        # agua escorrendo
+        d.line([0, 8, T - 1, 8], fill=(150, 220, 240))
+    elif style == "sand":
+        for y in range(7):
+            d.line([0, y, T - 1, y], fill=lerp(C[4], C[2], y / 6))
+        for x in range(T):
+            drop = 7 + int(1 + 1.5 * math.sin(x * 0.7) + rnd.random() * 1.5)
+            for y in range(7, drop):
+                p[x, y] = C[2] + (255,)
+            p[x, drop] = C[1] + (255,)
+        for _ in range(5):
+            d.point((rnd.randrange(0, T), rnd.randrange(1, 6)), fill=C[1])
+    return img
+
+
+def theme_platform(theme, part, rnd):
+    th = THEMES[theme]
+    C, style = th["plat_cols"], th["plat"]
+    img = Image.new("RGBA", (T, T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    if style == "wood":
+        d.rectangle([0, 4, T - 1, 22], fill=C[2])
+        for y in (4, 10, 16):
+            d.line([0, y, T - 1, y], fill=C[3])
+            d.line([0, y + 5, T - 1, y + 5], fill=C[1])
+        d.line([0, 22, T - 1, 22], fill=OUTLINE)
+        for x in (4, T - 5):
+            d.ellipse([x - 1, 6, x + 1, 8], fill=C[0])
+        d.line([0, 4, T - 1, 4], fill=C[4])
+    elif style == "coral":
+        d.rectangle([0, 6, T - 1, 22], fill=(84, 112, 116))
+        d.line([0, 22, T - 1, 22], fill=OUTLINE)
+        d.line([0, 6, T - 1, 6], fill=(140, 176, 166))
+        for _ in range(5):
+            x, y, r = rnd.randrange(2, T - 2), rnd.randrange(2, 9), rnd.randint(2, 4)
+            d.ellipse([x - r, y - r, x + r, y + r], fill=rnd.choice(C[1:4]))
+            d.point((x - 1, y - 1), fill=C[4])
+    elif style == "block":
+        d.rectangle([0, 2, T - 1, 22], fill=C[2])
+        d.rectangle([0, 2, T - 1, 5], fill=C[3])
+        d.line([0, 2, T - 1, 2], fill=C[4])
+        d.line([0, 20, T - 1, 20], fill=C[1])
+        d.line([0, 22, T - 1, 22], fill=OUTLINE)
+        d.line([T // 2, 6, T // 2, 19], fill=C[1])
+    elif style == "float":
+        d.rounded_rectangle([0, 4, T - 1, 20], radius=6, fill=C[2])
+        for x in range(0, T, 16):
+            d.rectangle([x + 8, 5, x + 15, 19], fill=C[4])
+        d.line([2, 6, T - 3, 6], fill=C[3])
+        d.line([2, 19, T - 3, 19], fill=C[0])
+        d.line([0, 21, T - 1, 21], fill=OUTLINE)
+    if part == "l":
+        d.line([0, 2, 0, 22], fill=OUTLINE)
+    if part == "r":
+        d.line([T - 1, 2, T - 1, 22], fill=OUTLINE)
+    return img
+
+
+def make_theme_tiles(theme):
+    rnd = random.Random(hash(theme) % 1000)
+    th = THEMES[theme]
+    tiles = [
+        top_tile(theme, rnd, 0), body_tile(th["body"], th["body_cols"], rnd),
+        edge(top_tile(theme, rnd, 1), "l"), edge(top_tile(theme, rnd, 2), "r"),
+        edge(body_tile(th["body"], th["body_cols"], rnd), "l"), edge(body_tile(th["body"], th["body_cols"], rnd), "r"),
+        theme_platform(theme, "l", rnd), theme_platform(theme, "m", rnd), theme_platform(theme, "r", rnd),
+    ]
+    extrude(tiles).save(OUT / f"tiles-{theme}.png")
+
+
+def make_springs():
+    """Mola de cada fase (2 quadros 32x24: normal e apertada)."""
+    looks = {
+        "floresta": ("board", (60, 150, 70), (130, 210, 120)),
+        "aquario": ("clam", (130, 80, 160), (200, 150, 230)),
+        "bolinhas": ("tramp", (216, 48, 44), (246, 207, 30)),
+        "parque": ("ring", (230, 100, 140), (255, 255, 255)),
+        "praia": ("ring", (240, 120, 40), (255, 255, 255)),
+    }
+    for theme, (kind, c1, c2) in looks.items():
+        img = Image.new("RGBA", (64, 24), (0, 0, 0, 0))
+        for f in range(2):
+            layer = Image.new("RGBA", (32, 24), (0, 0, 0, 0))
+            d = ImageDraw.Draw(layer)
+            top = 6 if f == 0 else 12
+            dark = lerp(c1, (0, 0, 0), 0.4)
+            if kind in ("board", "tramp"):
+                # pernas / mola
+                for x in (6, 24):
+                    d.line([x, top + 4, x, 23], fill=OUTLINE, width=2)
+                zig = [(10 + (i % 2) * 12, top + 4 + i * ((19 - top) // 4)) for i in range(5)]
+                d.line(zig, fill=(160, 160, 170), width=2)
+                d.rounded_rectangle([1, top, 30, top + 5], radius=2, fill=OUTLINE)
+                d.rounded_rectangle([2, top + 1, 29, top + 4], radius=2, fill=c1)
+                d.line([4, top + 1, 27, top + 1], fill=c2)
+            elif kind == "clam":
+                d.ellipse([2, 12, 29, 23], fill=OUTLINE)
+                d.ellipse([3, 13, 28, 22], fill=c1)
+                d.ellipse([3, top, 28, top + 12 - (f * 4)], fill=OUTLINE)
+                d.ellipse([4, top + 1, 27, top + 11 - (f * 4)], fill=c2)
+                d.ellipse([13, 14, 18, 19], fill=(250, 250, 255))
+            elif kind == "ring":
+                h = 16 if f == 0 else 10
+                y0 = 23 - h
+                d.ellipse([1, y0, 30, 23], fill=OUTLINE)
+                d.ellipse([2, y0 + 1, 29, 22], fill=c1)
+                for x0 in (8, 20):
+                    d.rectangle([x0, y0 + 1, x0 + 4, 22], fill=c2)
+                d.ellipse([10, y0 + h // 3, 21, 23 - h // 3], fill=OUTLINE)
+                d.ellipse([11, y0 + h // 3 + 1, 20, 22 - h // 3], fill=(120, 200, 230))
+                d.arc([4, y0 + 2, 27, 21], 200, 300, fill=lerp(c1, (255, 255, 255), 0.5))
+            img.alpha_composite(layer, (f * 32, 0))
+        img.save(OUT / f"mola-{theme}.png")
+
+
+def make_theme_enemies():
+    """Inimigos das fases novas: 3 quadros 32x32 (andando 1, andando 2, amassado)."""
+    W = 32
+    # caranguejo (praia)
+    img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    red, redh, redd = (226, 70, 40), (250, 140, 100), (150, 40, 24)
+    for f in range(2):
+        x0 = f * W
+        for i, lx in enumerate((8, 12, 20, 24)):
+            off = 2 if (i + f) % 2 else -2
+            d.line([x0 + lx, 22, x0 + lx + off, 30], fill=OUTLINE, width=2)
+        d.ellipse([x0 + 4, 12, x0 + 28, 26], fill=OUTLINE)
+        d.ellipse([x0 + 5, 13, x0 + 27, 25], fill=red)
+        d.ellipse([x0 + 8, 14, x0 + 18, 18], fill=redh)
+        d.line([x0 + 6, 24, x0 + 26, 24], fill=redd)
+        for cx in (4, 27):  # garras
+            up = 2 if f else 0
+            d.ellipse([x0 + cx - 4, 6 - up, x0 + cx + 4, 14 - up], fill=OUTLINE)
+            d.ellipse([x0 + cx - 3, 7 - up, x0 + cx + 3, 13 - up], fill=red)
+            d.line([x0 + cx - 1, 7 - up, x0 + cx + 1, 10 - up], fill=OUTLINE)
+        for ex in (12, 20):  # olhos
+            d.line([x0 + ex, 13, x0 + ex, 9], fill=OUTLINE, width=2)
+            d.ellipse([x0 + ex - 2, 5, x0 + ex + 2, 9], fill=(255, 255, 255), outline=OUTLINE)
+            d.point((x0 + ex, 7), fill=OUTLINE)
+    x0 = W * 2
+    d.ellipse([x0 + 3, 22, x0 + 29, 31], fill=OUTLINE)
+    d.ellipse([x0 + 4, 23, x0 + 28, 30], fill=red)
+    img.save(OUT / "enemy-caranguejo.png")
+
+    # agua-viva (aquario): flutua, nao anda
+    img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    pink, pinkh, pinkd = (236, 120, 190), (255, 200, 232), (170, 70, 140)
+    for f in range(2):
+        x0 = f * W
+        for i, tx in enumerate((9, 14, 19, 24)):
+            wob = 2 if (i + f) % 2 else -2
+            d.line([x0 + tx, 16, x0 + tx + wob, 24, x0 + tx, 30], fill=pinkd, width=2)
+        squish = f * 2
+        d.pieslice([x0 + 3 - squish, 2 + squish, x0 + 29 + squish, 28], 180, 360, fill=OUTLINE)
+        d.pieslice([x0 + 4 - squish, 3 + squish, x0 + 28 + squish, 27], 180, 360, fill=pink)
+        d.ellipse([x0 + 8, 6 + squish, x0 + 15, 10 + squish], fill=pinkh)
+        d.line([x0 + 3, 15, x0 + 29, 15], fill=OUTLINE, width=2)
+        d.ellipse([x0 + 11, 9, x0 + 14, 12], fill=OUTLINE)
+        d.ellipse([x0 + 18, 9, x0 + 21, 12], fill=OUTLINE)
+    x0 = W * 2
+    d.ellipse([x0 + 3, 22, x0 + 29, 30], fill=OUTLINE)
+    d.ellipse([x0 + 4, 23, x0 + 28, 29], fill=pink)
+    img.save(OUT / "enemy-aguaviva.png")
+
+    # bola saltitante (piscina de bolinhas)
+    img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    bc, bh, bd = (31, 69, 181), (120, 150, 240), (16, 36, 110)
+    for f, (w, h) in enumerate([(26, 26), (28, 24), (30, 14)]):
+        x0 = f * W
+        bx, by = x0 + (W - w) // 2, W - h - 1
+        d.ellipse([bx, by, bx + w, by + h], fill=OUTLINE)
+        d.ellipse([bx + 1, by + 1, bx + w - 1, by + h - 1], fill=bc)
+        d.ellipse([bx + 2, by + h * 0.55, bx + w - 2, by + h - 2], fill=bd)
+        d.ellipse([bx + 2, by + 1, bx + w - 4, by + h * 0.75], fill=bc)
+        d.ellipse([bx + 5, by + 3, bx + 11, by + 3 + h * 0.25], fill=bh)
+        if f < 2:  # olhos bravos
+            ey = by + h * 0.45
+            for ex in (bx + w * 0.38, bx + w * 0.66):
+                d.ellipse([ex - 3, ey - 3, ex + 3, ey + 3], fill=(255, 255, 255))
+                d.rectangle([ex - 1, ey - 1, ex, ey + 1], fill=OUTLINE)
+            d.line([bx + w * 0.25, ey - 6, bx + w * 0.45, ey - 3], fill=OUTLINE, width=2)
+            d.line([bx + w * 0.78, ey - 6, bx + w * 0.58, ey - 3], fill=OUTLINE, width=2)
+    img.save(OUT / "enemy-bola.png")
+
+    # patinho de borracha (parque aquatico)
+    img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    yl, yh, yd, beak = (250, 210, 40), (255, 240, 150), (210, 150, 20), (240, 120, 30)
+    for f in range(2):
+        x0 = f * W
+        bob = f
+        d.ellipse([x0 + 3, 14 + bob, x0 + 27, 30], fill=OUTLINE)
+        d.ellipse([x0 + 4, 15 + bob, x0 + 26, 29], fill=yl)
+        d.ellipse([x0 + 6, 16 + bob, x0 + 16, 21 + bob], fill=yh)
+        d.polygon([(x0 + 3, 20 + bob), (x0 + 0, 15 + bob), (x0 + 7, 18 + bob)], fill=yd)  # rabinho
+        d.ellipse([x0 + 15, 3 + bob, x0 + 29, 17 + bob], fill=OUTLINE)
+        d.ellipse([x0 + 16, 4 + bob, x0 + 28, 16 + bob], fill=yl)
+        d.ellipse([x0 + 18, 5 + bob, x0 + 22, 8 + bob], fill=yh)
+        d.polygon([(x0 + 27, 10 + bob), (x0 + 32, 12 + bob), (x0 + 27, 14 + bob)], fill=beak)
+        d.ellipse([x0 + 22, 7 + bob, x0 + 25, 10 + bob], fill=OUTLINE)
+        d.line([x0 + 21, 6 + bob, x0 + 26, 7 + bob], fill=OUTLINE)
+    x0 = W * 2
+    d.ellipse([x0 + 3, 22, x0 + 29, 31], fill=OUTLINE)
+    d.ellipse([x0 + 4, 23, x0 + 28, 30], fill=yl)
+    img.save(OUT / "enemy-patinho.png")
+
+
+if __name__ == "__main__":
+    for theme in THEMES:
+        make_theme_tiles(theme)
+    make_springs()
+    make_theme_enemies()
+    print("temas ok")

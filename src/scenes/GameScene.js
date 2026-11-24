@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
-import { TILE, U, PLAYER, ENEMY, DOG, VIEW, SKY } from '../config.js';
+import { TILE, U, PLAYER, ENEMY, DOG, VIEW } from '../config.js';
 import { touch, layout, computeLayout } from '../controls.js';
-import level1 from '../levels/level1.js';
+import { levelById, ENEMIES } from '../levels/index.js';
+
+const MOLA_BOOST = 1.45; // a mola joga o Raul 45% mais forte que um pulo normal
+const BOUNCE_V = 260 * U; // altura do quique da bolinha
 
 // indices do tiles.png
 const T = { GRASS: 0, DIRT: 1, GRASS_L: 2, GRASS_R: 3, DIRT_L: 4, DIRT_R: 5, PLAT_L: 6, PLAT: 7, PLAT_R: 8 };
@@ -11,8 +14,13 @@ export default class GameScene extends Phaser.Scene {
     super('Game');
   }
 
-  create() {
-    this.rows = level1;
+  create(data) {
+    this.level = levelById(data?.level || this.registry.get('level'));
+    this.registry.set('level', this.level.id);
+    this.registry.set('mode', 'game');
+    this.game.events.emit('mode', 'game');
+    this.enemyDef = ENEMIES[this.level.enemy];
+    this.rows = this.level.map;
     this.levelW = this.rows[0].length * TILE;
     this.levelH = this.rows.length * TILE;
     this.state = 'playing';
@@ -65,7 +73,7 @@ export default class GameScene extends Phaser.Scene {
       })
     );
     const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
-    const tileset = map.addTilesetImage('tiles', 'tiles', TILE, TILE, 1, 2);
+    const tileset = map.addTilesetImage(this.level.tiles, this.level.tiles, TILE, TILE, 1, 2);
     this.layer = map.createLayer(0, tileset, 0, 0);
     this.layer.setCollision([T.GRASS, T.DIRT, T.GRASS_L, T.GRASS_R, T.DIRT_L, T.DIRT_R]);
     // plataformas: so colidem por cima, da pra atravessar pulando por baixo
@@ -75,21 +83,54 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildBackground() {
-    this.cameras.main.setBackgroundColor(SKY);
+    const lv = this.level;
+    this.cameras.main.setBackgroundColor(lv.sky);
     const groundY = 21 * TILE + 8 * U;
-    const rnd = new Phaser.Math.RandomDataGenerator(['nuvens']);
-    for (let i = 0; i < 14; i++) {
+    if (!lv.bg) {
+      // floresta: nuvens, morros e arvores desenhados por codigo
+      const rnd = new Phaser.Math.RandomDataGenerator(['nuvens']);
+      for (let i = 0; i < 14; i++) {
+        this.add
+          .image(rnd.between(-200 * U, this.levelW * 0.3 + 400 * U), rnd.between(40 * U, 200 * U), 'cloud')
+          .setScrollFactor(0.1, 0.6)
+          .setAlpha(0.95);
+      }
+      this.add.tileSprite(-400 * U, groundY, this.levelW + 800 * U, 192, 'hills-far').setOrigin(0, 1).setScrollFactor(0.2, 1);
+      this.add.tileSprite(-400 * U, groundY, this.levelW + 800 * U, 192, 'trees-near').setOrigin(0, 1).setScrollFactor(0.45, 1);
+    } else {
+      // fases das fotos: panorama do Magnific, em dobro, repetindo sem emenda
+      const src = this.textures.get(lv.bg).getSourceImage();
       this.add
-        .image(rnd.between(-200 * U, this.levelW * 0.3 + 400 * U), rnd.between(40 * U, 200 * U), 'cloud')
-        .setScrollFactor(0.1, 0.6)
-        .setAlpha(0.95);
+        .tileSprite(-400 * U, groundY + 40 * U, this.levelW + 800 * U, src.height * 2, lv.bg)
+        .setOrigin(0, 1)
+        .setTileScale(2, 2)
+        .setScrollFactor(0.3, 1);
     }
-    this.add.tileSprite(-400 * U, groundY, this.levelW + 800 * U, 192, 'hills-far').setOrigin(0, 1).setScrollFactor(0.2, 1);
-    this.add.tileSprite(-400 * U, groundY, this.levelW + 800 * U, 192, 'trees-near').setOrigin(0, 1).setScrollFactor(0.45, 1);
+    if (lv.water) {
+      // agua no fundo dos buracos (cair nela continua custando um coracao)
+      const top = this.levelH - TILE * 1.4;
+      this.add.rectangle(0, top, this.levelW, this.levelH - top + 200, lv.water, 0.92).setOrigin(0, 0).setDepth(-1);
+      this.waves = this.add.graphics().setDepth(-1);
+      this.waterTop = top;
+    }
+    if (lv.bubbles) this.makeBubbles();
+  }
+
+  makeBubbles() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    g.lineStyle(2, 0xdff8ff, 0.9).strokeCircle(6, 6, 4).fillStyle(0xffffff, 0.9).fillRect(4, 3, 2, 2);
+    g.generateTexture('bubble', 12, 12);
+    g.destroy();
+    this.add.particles(0, 0, 'bubble', {
+      x: { min: 0, max: this.levelW }, y: this.levelH,
+      lifespan: 9000, speedY: { min: -40 * U, max: -20 * U }, speedX: { min: -6, max: 6 },
+      scale: { min: 0.6, max: 1.4 }, alpha: { start: 0.9, end: 0 }, frequency: 220, quantity: 1,
+    }).setDepth(-1);
   }
 
   spawnEntities() {
     this.coins = this.physics.add.staticGroup();
+    this.molas = this.physics.add.staticGroup();
     this.enemies = this.physics.add.group({ allowGravity: true });
     this.checkpoints = [];
 
@@ -103,12 +144,11 @@ export default class GameScene extends Phaser.Scene {
           c.body.setSize(20, 24);
           this.tweens.add({ targets: c, scaleX: 0.25, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: x * 40 });
         }
-        if (ch === 'e') {
-          const e = this.enemies.create(cx, bottom, 'enemy').setOrigin(0.5, 1);
-          e.body.setSize(28, 22).setOffset(2, 6);
-          e.dir = -1;
-          e.setVelocityX(-ENEMY.speed);
-          e.play('enemy-walk');
+        if (ch === 'e') this.spawnEnemy(cx, bottom, x);
+        if (ch === 'T') {
+          const m = this.molas.create(cx, bottom, this.level.mola, 0).setOrigin(0.5, 1);
+          m.refreshBody();
+          m.body.setSize(28, 14).setOffset(2, 10);
         }
         if (ch === 'F') {
           this.flag = this.physics.add.staticImage(cx, bottom, 'flag').setOrigin(0.5, 1);
@@ -139,6 +179,26 @@ export default class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coins, (_p, c) => this.collectCoin(c));
     this.physics.add.overlap(this.player, this.enemies, (_p, e) => this.touchEnemy(e));
     this.physics.add.overlap(this.player, this.flag, () => this.reachFlag());
+    this.physics.add.overlap(this.player, this.molas, (_p, m) => this.bounceMola(m));
+  }
+
+  spawnEnemy(cx, bottom, x) {
+    const def = this.enemyDef;
+    const e = this.enemies.create(cx, bottom, def.key).setOrigin(0.5, 1);
+    e.body.setSize(def.body[0], def.body[1]).setOffset(def.body[2], def.body[3]);
+    e.kind = def.kind;
+    e.dir = -1;
+    e.play(`${def.key}-walk`);
+    if (e.kind === 'floater') {
+      // a agua-viva e movida pelo codigo (sobe e desce), sem gravidade
+      e.body.allowGravity = false;
+      e.body.moves = false;
+      e.baseX = cx;
+      e.baseY = bottom;
+      e.phase = x * 0.7;
+    } else {
+      e.setVelocityX(-ENEMY.speed);
+    }
   }
 
   setupCamera() {
@@ -184,6 +244,7 @@ export default class GameScene extends Phaser.Scene {
     }
     this.updateEnemies();
     this.updateDog(delta);
+    if (this.waves) this.drawWaves(time);
     const cam = this.cameras.main;
     cam.followOffset.x = Phaser.Math.Linear(cam.followOffset.x, -this.facing * this.lookAhead, 0.04);
   }
@@ -226,7 +287,9 @@ export default class GameScene extends Phaser.Scene {
       this.jumpPressedAt = -9999;
       this.lastGroundedAt = -9999;
     }
-    if (!input.jump && body.velocity.y < -PLAYER.jumpCutVelocity) {
+    if (body.velocity.y >= 0) this.molaBoost = false;
+    // pulo curto ao soltar o botao (menos depois da mola, que lanca sempre com forca total)
+    if (!input.jump && !this.molaBoost && body.velocity.y < -PLAYER.jumpCutVelocity) {
       body.setVelocityY(-PLAYER.jumpCutVelocity);
     }
     this.prevJumpHeld = input.jump;
@@ -246,9 +309,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updateEnemies() {
+    const t = this.time.now;
     this.enemies.children.each((e) => {
       if (!e.active || e.dead) return;
       const b = e.body;
+      if (e.kind === 'floater') {
+        e.setPosition(e.baseX + Math.sin(t / 1600 + e.phase) * 28 * U, e.baseY + Math.sin(t / 650 + e.phase) * 26 * U);
+        e.setFlipX(Math.cos(t / 1600 + e.phase) > 0);
+        return;
+      }
       if (b.blocked.left) e.dir = 1;
       else if (b.blocked.right) e.dir = -1;
       else if (b.blocked.down) {
@@ -256,9 +325,26 @@ export default class GameScene extends Phaser.Scene {
         const ahead = this.layer.getTileAtWorldXY(e.x + e.dir * 9 * U, b.bottom + 2 * U);
         if (!ahead || !ahead.collides) e.dir *= -1;
       }
-      e.setVelocityX(e.dir * ENEMY.speed);
+      if (e.kind === 'bouncer' && b.blocked.down) {
+        // amassa um instante e quica de novo
+        e.anims.stop();
+        e.setFrame(1);
+        b.setVelocityY(-BOUNCE_V);
+        this.time.delayedCall(90, () => e.active && !e.dead && e.play(`${this.enemyDef.key}-walk`, true));
+      }
+      e.setVelocityX(e.dir * ENEMY.speed * (e.kind === 'bouncer' ? 1.3 : 1));
       e.setFlipX(e.dir > 0);
     });
+  }
+
+  bounceMola(m) {
+    const p = this.player.body;
+    if (this.state !== 'playing' || p.velocity.y < 0 || p.bottom > m.body.top + 10 * U) return;
+    p.setVelocityY(-PLAYER.jumpVelocity * MOLA_BOOST);
+    this.molaBoost = true;
+    this.lastGroundedAt = -9999;
+    m.setFrame(1);
+    this.time.delayedCall(160, () => m.setFrame(0));
   }
 
   updateDog(delta) {
@@ -297,6 +383,16 @@ export default class GameScene extends Phaser.Scene {
     if (sleeping) {
       const tz = (this.time.now % 1500) / 1500;
       this.zzz.setPosition(d.x + (4 + tz * 4) * U, d.y - (14 + tz * 8) * U).setAlpha(1 - tz);
+    }
+  }
+
+  drawWaves(time) {
+    const cam = this.cameras.main;
+    const g = this.waves.clear().fillStyle(0xffffff, 0.55);
+    const x0 = Math.floor(cam.worldView.x / (8 * U)) * 8 * U;
+    for (let x = x0; x < cam.worldView.right + 16 * U; x += 8 * U) {
+      const h = Math.round((Math.sin(x / 40 + time / 300) + 1) * 2) * U;
+      g.fillRect(x, this.waterTop - h, 8 * U, 2 * U);
     }
   }
 
@@ -370,7 +466,21 @@ export default class GameScene extends Phaser.Scene {
     p.body.setVelocityX(0);
     p.play('raul-jump');
     this.tweens.add({ targets: p, y: p.y - 10 * U, duration: 220, yoyo: true, repeat: 3, ease: 'Quad.out' });
-    this.game.events.emit('level-complete', { coins: this.coinCount, total: this.totalCoins() });
+    const best = this.saveBest();
+    this.game.events.emit('level-complete', { coins: this.coinCount, total: this.totalCoins(), best });
+  }
+
+  saveBest() {
+    // recorde de moedas por fase, guardado neste aparelho
+    const key = `raul-best-${this.level.id}`;
+    let best = 0;
+    try {
+      best = Number(localStorage.getItem(key)) || 0;
+      if (this.coinCount > best) localStorage.setItem(key, String(this.coinCount));
+    } catch {
+      // modo privado sem armazenamento: so nao guarda
+    }
+    return Math.max(best, this.coinCount);
   }
 
   totalCoins() {

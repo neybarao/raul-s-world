@@ -49,6 +49,9 @@ RUN_SHEET = ROOT / "art/concept/run-cycle-video.jpg"
 RUN_GRID = (4, 4)
 RUN_CELL_IMG_H = 338   # altura da imagem em cada celula (o resto e a legenda)
 RUN_FRAMES = 8
+# Raul sentado chorando: 2 quadros lado a lado, gerados no Magnific (GPT 2.6)
+CRY_SHEET = ROOT / "art/concept/cry-sheet.jpg"
+CRY_HEIGHT = 56  # sentado ele fica mais baixo que em pe (66)
 COIN = (985, 825, 1055, 925)
 FLAG = (1366, 740, 1505, 975)
 
@@ -287,53 +290,6 @@ def head_swap(body, face, head_h_ratio, head_w):
     return out
 
 
-# pecas da pose sentada, em coordenadas do sheet
-TORSO = (425, 280, 648, 410)       # tronco e bermuda do Raul parado
-BACK_SHOE = (955, 360, 1013, 448)  # tenis de tras da corrida; espelhado fica de bico para cima
-
-
-def crying_face(sheet, variant):
-    """Rosto triste com lagrimas pintadas em resolucao cheia (antes de reduzir)."""
-    face = sheet.crop(FACE_SAD).convert("RGBA")
-    d = ImageDraw.Draw(face)
-    length = 46 if variant == 0 else 34
-    drop = 0 if variant == 0 else 18
-    for ex, ey in ((96, 156), (160, 159)):
-        d.rounded_rectangle([ex - 6, ey, ex + 6, ey + length], radius=6, fill=TEAR)
-        d.rounded_rectangle([ex - 3, ey + 2, ex, ey + length - 6], radius=2, fill=TEAR_HI)
-        if drop:  # gota caindo separada
-            d.ellipse([ex - 6, ey + length + drop, ex + 6, ey + length + drop + 14], fill=TEAR)
-    return cut_img(face)
-
-
-def sitting(sheet, idle_w, variant):
-    """Raul sentado no chao, olhando para a direita, com as pernas esticadas e chorando."""
-    face = crying_face(sheet, variant)
-    torso = cut(sheet, TORSO)
-    shoe = cut(sheet, BACK_SHOE).transpose(Image.FLIP_LEFT_RIGHT)
-    scale = idle_w * 0.98 / face.width
-    face = face.resize((int(face.width * scale), int(face.height * scale)), Image.LANCZOS)
-    bob = 0 if variant == 0 else 6  # ombros sobem no soluco
-    torso_y = face.height - 22 + bob
-    ground = torso_y + torso.height + 4
-    shin_x0 = int(torso.width * 0.45)
-    shoe_x = int(torso.width * 0.80)
-    w = max(torso.width, shoe_x + shoe.width, face.width)
-    out = Image.new("RGBA", (w, ground), (0, 0, 0, 0))
-    out.alpha_composite(torso, (0, torso_y))
-    # canela esticada no chao, com contorno e sombra embaixo
-    d = ImageDraw.Draw(out)
-    top = ground - 46
-    d.rounded_rectangle([shin_x0, top, shoe_x + 24, ground - 2], radius=18, fill=(244, 178, 128, 255), outline=(40, 20, 14, 255), width=6)
-    d.rounded_rectangle([shin_x0 + 8, ground - 18, shoe_x + 16, ground - 9], radius=4, fill=(214, 140, 96, 255))
-    d.rounded_rectangle([shin_x0 + 10, top + 9, shoe_x + 10, top + 16], radius=4, fill=(254, 214, 172, 255))
-    # meia branca
-    d.rectangle([shoe_x + 4, top + 6, shoe_x + 20, ground - 8], fill=(246, 246, 246, 255))
-    out.alpha_composite(shoe, (shoe_x, ground - shoe.height))
-    out.alpha_composite(face, ((torso.width - face.width) // 2, bob))
-    return out
-
-
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     sheet = Image.open(SHEET)
@@ -341,8 +297,10 @@ def main():
     raul_full = {k: cut(sheet, b) for k, b in RAUL.items()}
     sad = cut(sheet, FACE_SAD)
     raul_full["hurt"] = head_swap(raul_full["jump"], sad, 0.43, raul_full["idle"].width * 0.98)
-    raul_full["cry1"] = sitting(sheet, raul_full["idle"].width, 0)
-    raul_full["cry2"] = sitting(sheet, raul_full["idle"].width, 1)
+    cry = Image.open(CRY_SHEET).convert("RGBA")
+    half = cry.width // 2
+    raul_full["cry1"] = cut_img(cry.crop((8, 8, half - 8, cry.height - 8)))
+    raul_full["cry2"] = cut_img(cry.crop((half + 8, 8, cry.width - 8, cry.height - 8)))
 
     # corrida: 8 quadros, na mesma altura do Raul parado (o mais alto da corrida = 66 px)
     run_full, run_lift, run_head = run_cycle()
@@ -351,8 +309,10 @@ def main():
     lift = {1 + i: round(l * run_scale) for i, l in enumerate(run_lift)}
     anchor = {1 + i: h * run_scale for i, h in enumerate(run_head)}
 
-    order = ["idle", "jump", "hurt", "cry1", "cry2"]
+    order = ["idle", "jump", "hurt"]
     small = [shrink(raul_full[k], RAUL_SCALE) for k in order]
+    cry_scale = CRY_HEIGHT / max(raul_full["cry1"].height, raul_full["cry2"].height)
+    small += [shrink(raul_full[k], cry_scale) for k in ("cry1", "cry2")]
     small = small[:1] + run_small + small[1:]
     pal = build_palette(small, RAUL_COLORS)
     frames = [outline(apply_palette(s, pal)) for s in small]

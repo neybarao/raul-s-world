@@ -5,6 +5,22 @@ Roda no navegador: em pé no celular (com botões na faixa de baixo) e deitado n
 
 Jogar: https://neybarao.github.io/raul-s-world/
 
+## Fases
+Antes de jogar aparece o seletor de fases (toque no cartão duas vezes, ou direcional + A, ou setas + Enter):
+
+| Fase | Desafio |
+|---|---|
+| Floresta | a fase original, com besouros |
+| Aquário | águas-vivas flutuando sobre os buracos |
+| Piscina de Bolinhas | bolinhas bravas quicando e muitas molas |
+| Parque Aquático | piscinas largas: boias e plataformas flutuantes |
+| Praia | caranguejos e píer de madeira sobre o mar |
+
+Os fundos das fases novas foram gerados no Magnific (GPT 2.6) em pixel art 32 bits, usando as
+cores das fotos de férias da família (só as paletas foram enviadas, não as fotos). Os mapas ficam
+em `tools/build_levels.py`; a lista de fases e o visual de cada uma em `src/levels/index.js`.
+Legenda extra do mapa: `T` = mola. O recorde de moedas de cada fase fica guardado no aparelho.
+
 ## Controles
 - Computador: setas ou A/D para andar, Espaço/W/↑ para pular, Shift ou X para correr, P ou Esc para pausar
 - Celular: direcional em cruz para andar, A para pular, B (segurar) para correr, START para pausar
@@ -29,8 +45,9 @@ Cada push na `main` publica no GitHub Pages pelo workflow `.github/workflows/dep
 
 ## Estrutura
 - `src/config.js`: números de jogabilidade (velocidade, pulo, dano, cachorro, zoom)
-- `src/levels/level1.js`: a fase desenhada em texto (`#` chão, `=` plataforma, `o` moeda, `e` inimigo, `P` início, `F` bandeira)
+- `src/levels/*.js`: as fases desenhadas em texto (`#` chão, `=` plataforma, `o` moeda, `e` inimigo, `T` mola, `P` início, `F` bandeira), geradas por `tools/build_levels.py`
 - `src/scenes/GameScene.js`: física, Raul, cachorro, inimigos, câmera
+- `src/scenes/MenuScene.js`: seletor de fases
 - `src/scenes/UIScene.js`: HUD, botões de toque, pausa e mensagens
 - `public/assets/`: sprites e tiles
 - `art/concept/`: imagens conceituais originais

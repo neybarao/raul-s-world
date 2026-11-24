@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TILE } from '../config.js';
+import { LEVELS, ENEMIES } from '../levels/index.js';
 
 // ?v= muda a cada build, entao o navegador sempre baixa a versao nova das imagens
 const asset = (path) => `assets/${path}?v=${__BUILD_ID__}`;
@@ -22,6 +23,16 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('coin', asset('sprites/coin.png'));
     this.load.image('flag', asset('sprites/flag.png'));
     this.load.image('tiles', asset('tiles.png'));
+    // fases novas: chao, fundo, mola e inimigo de cada uma
+    for (const lv of LEVELS) {
+      if (lv.tiles !== 'tiles') this.load.image(lv.tiles, asset(`${lv.tiles}.png`));
+      if (lv.bg) this.load.image(lv.bg, asset(`bg/${lv.id}.png`));
+      this.load.image(`thumb-${lv.id}`, asset(`thumbs/${lv.id}.png`));
+      this.load.spritesheet(lv.mola, asset(`${lv.mola}.png`), { frameWidth: 32, frameHeight: 24 });
+    }
+    for (const en of Object.values(ENEMIES)) {
+      if (en.key !== 'enemy') this.load.spritesheet(en.key, asset(`${en.key}.png`), { frameWidth: en.frame[0], frameHeight: en.frame[1] });
+    }
     this.load.image('cloud', asset('cloud.png'));
     this.load.image('hills-far', asset('hills-far.png'));
     this.load.image('trees-near', asset('trees-near.png'));
@@ -40,10 +51,12 @@ export default class BootScene extends Phaser.Scene {
     a.create({ key: 'dog-stand', frames: f('dog', [0]) });
     a.create({ key: 'dog-sit', frames: f('dog', [2]) });
     a.create({ key: 'dog-sleep', frames: f('dog', [3]) });
-    a.create({ key: 'enemy-walk', frames: a.generateFrameNumbers('enemy', { frames: [0, 1] }), frameRate: 5, repeat: -1 });
+    for (const en of Object.values(ENEMIES)) {
+      a.create({ key: `${en.key}-walk`, frames: a.generateFrameNumbers(en.key, { frames: [0, 1] }), frameRate: 5, repeat: -1 });
+    }
 
     this.registry.set('tile', TILE);
-    this.scene.start('Game');
+    this.scene.start('Menu');
     this.scene.launch('UI');
   }
 }
