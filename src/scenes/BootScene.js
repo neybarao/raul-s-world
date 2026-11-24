@@ -20,6 +20,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('enemy', asset('enemy.png'), { frameWidth: 32, frameHeight: 28 });
     this.load.spritesheet('hearts', asset('hearts.png'), { frameWidth: 18, frameHeight: 16 });
     this.load.image('raul-face', asset('sprites/raul-face.png'));
+    // musicas (geradas no Magnific)
+    for (const m of ['menu', 'ar-livre', 'quartel']) this.load.audio(`musica-${m}`, asset(`music/${m}.mp3`));
     this.load.image('coin', asset('sprites/coin.png'));
     this.load.spritesheet('mamae', asset('sprites/mamae.png'), { frameWidth: 88, frameHeight: 112 });
     this.load.image('tiles', asset('tiles.png'));

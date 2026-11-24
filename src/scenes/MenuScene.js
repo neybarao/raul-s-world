@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { LEVELS } from '../levels/index.js';
 import { touch, layout, computeLayout } from '../controls.js';
+import { playMusic } from '../music.js';
 
 const FONT = { fontFamily: '"Courier New", monospace', fontStyle: 'bold', color: '#ffffff' };
 
@@ -12,6 +13,7 @@ export default class MenuScene extends Phaser.Scene {
 
   create() {
     this.registry.set('mode', 'menu');
+    playMusic(this, 'musica-menu');
     this.game.events.emit('mode', 'menu');
     const last = this.registry.get('level');
     this.selected = Math.max(0, LEVELS.findIndex((l) => l.id === last));

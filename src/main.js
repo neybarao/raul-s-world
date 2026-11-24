@@ -5,6 +5,7 @@ import UIScene from './scenes/UIScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import { GRAVITY } from './config.js';
 import { setupPWA, setupFullscreen } from './pwa.js';
+import { musicState } from './music.js';
 
 // O canvas usa a resolucao real da tela (pixels fisicos) e o CSS reduz para o tamanho visual.
 // Assim o zoom da camera pode ser um numero inteiro de pixels fisicos e cada pixel da arte
@@ -49,3 +50,4 @@ setupFullscreen();
 // facilita testes no console do navegador
 window.__game = game;
 window.__build = __BUILD_ID__;
+window.__music = musicState;

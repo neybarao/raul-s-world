@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TILE, U, PLAYER, ENEMY, DOG, VIEW } from '../config.js';
 import { touch, layout, computeLayout } from '../controls.js';
+import { playMusic, setMusicPaused } from '../music.js';
 import { levelById, ENEMIES } from '../levels/index.js';
 
 const MOLA_BOOST = 1.45; // a mola joga o Raul 45% mais forte que um pulo normal
@@ -20,6 +21,8 @@ export default class GameScene extends Phaser.Scene {
     this.registry.set('mode', 'game');
     this.game.events.emit('mode', 'game');
     this.enemyDef = ENEMIES[this.level.enemy];
+    setMusicPaused(false);
+    playMusic(this, this.level.music);
     this.rows = this.level.map;
     this.levelW = this.rows[0].length * TILE;
     this.levelH = this.rows.length * TILE;

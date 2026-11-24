@@ -26,8 +26,18 @@ cores das fotos de férias da família (só as paletas foram enviadas, não as f
 em `tools/build_levels.py`; a lista de fases e o visual de cada uma em `src/levels/index.js`.
 Legenda extra do mapa: `T` = mola. O recorde de moedas de cada fase fica guardado no aparelho.
 
+## Música
+Trilhas chiptune originais geradas no Magnific (Google Lyria 3), recortadas em compassos inteiros
+para repetir sem emenda (originais em `art/music/`, versões do jogo em `public/assets/music/`):
+- `menu.mp3`: seletor de fases
+- `ar-livre.mp3`: fases em geral
+- `quartel.mp3`: Quartel da Mamãe
+
+A música de cada fase fica em `src/levels/index.js` (campo `music`). O botão de alto-falante (ou a
+tecla M) liga e desliga o som, e a escolha fica guardada no aparelho. Na pausa o volume abaixa.
+
 ## Controles
-- Computador: setas ou A/D para andar, Espaço/W/↑ para pular, Shift ou X para correr, P ou Esc para pausar
+- Computador: setas ou A/D para andar, Espaço/W/↑ para pular, Shift ou X para correr, P ou Esc para pausar, M para ligar/desligar o som
 - Celular: direcional em cruz para andar, A para pular, B (segurar) para correr, START para pausar
 
 ## App (PWA)

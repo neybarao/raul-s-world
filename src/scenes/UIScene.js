@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { touch, layout, computeLayout } from '../controls.js';
+import { isMuted, toggleMute, setMusicPaused } from '../music.js';
 
 const FONT = { fontFamily: '"Courier New", monospace', fontStyle: 'bold', color: '#ffffff', stroke: '#1b1b2a' };
 
@@ -24,6 +25,10 @@ export default class UIScene extends Phaser.Scene {
     this.pauseBtn = this.add.graphics();
     this.pauseZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
     this.pauseZone.on('pointerdown', () => this.togglePause());
+    // botao de som (liga/desliga a musica), aparece no menu e no jogo
+    this.soundBtn = this.add.graphics();
+    this.soundZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
+    this.soundZone.on('pointerdown', () => { toggleMute(); this.drawHud(); });
     this.labels = [0, 1, 2].map(() => this.add.text(0, 0, '', FONT).setOrigin(0.5).setVisible(false));
     this.startZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
     this.startZone.on('pointerdown', () => this.togglePause());
@@ -45,6 +50,7 @@ export default class UIScene extends Phaser.Scene {
 
     const kb = this.input.keyboard;
     kb.on('keydown-P', () => this.togglePause());
+    kb.on('keydown-M', () => { toggleMute(); this.drawHud(); });
     kb.on('keydown-ESC', () => this.togglePause());
     kb.on('keydown-SPACE', () => this.overlayAction());
     kb.on('keydown-ENTER', () => this.overlayAction());
@@ -74,10 +80,14 @@ export default class UIScene extends Phaser.Scene {
     const show = this.mode !== 'menu';
     [this.face, this.faceFrame, this.coinIcon, this.coinText, this.pauseBtn, ...this.heartImgs].forEach((o) => o.setVisible(show));
     if (this.pauseZone.input) this.pauseZone.input.enabled = show;
-    if (!show) return;
     const s = this.s;
     const m = 6 * s;
     const top0 = layout.safeTop;
+    // som: no jogo fica a esquerda da pausa; no menu, no canto
+    const pbs = 14 * s;
+    const sx = layout.width - m - pbs - (show ? pbs + 4 * s : 0);
+    this.drawSoundButton(sx, m + top0, pbs, s);
+    if (!show) return;
     // a arte do HUD tem o dobro de resolucao (escala 32 bits), por isso metade da escala
     const hs = s / 2;
     this.face.setScale(hs).setPosition(m, m + top0);
@@ -99,8 +109,27 @@ export default class UIScene extends Phaser.Scene {
     this.pauseZone.setPosition(right - pb - pad, m + top0 - pad).setSize(pb + 2 * pad, pb + 2 * pad);
     if (this.pauseZone.input) this.pauseZone.input.hitArea.setSize(pb + 2 * pad, pb + 2 * pad);
 
-    this.coinIcon.setScale(s * 0.4).setPosition(right - pb - 60 * s, m + top0 + pb / 2);
-    this.coinText.setFontSize(9 * s).setStroke('#1b1b2a', s * 1.5).setPosition(right - pb - 50 * s, m + top0 + pb / 2).setText(`x ${this.hud.coins}`);
+    const coinX = right - pb * 2 - 4 * s;
+    this.coinIcon.setScale(s * 0.4).setPosition(coinX - 60 * s, m + top0 + pb / 2);
+    this.coinText.setFontSize(9 * s).setStroke('#1b1b2a', s * 1.5).setPosition(coinX - 50 * s, m + top0 + pb / 2).setText(`x ${this.hud.coins}`);
+  }
+
+  drawSoundButton(x, y, size, s) {
+    const g = this.soundBtn.clear();
+    g.fillStyle(0x1b1b2a, 0.75).fillRoundedRect(x, y, size, size, 3 * s);
+    // alto-falante
+    g.fillStyle(0xffffff, 1).fillRect(x + 3 * s, y + 5 * s, 2 * s, 4 * s);
+    g.fillTriangle(x + 4 * s, y + 7 * s, x + 8 * s, y + 3 * s, x + 8 * s, y + 11 * s);
+    if (isMuted()) {
+      g.lineStyle(1.5 * s, 0xff6b6b, 1).lineBetween(x + 9 * s, y + 5 * s, x + 12 * s, y + 9 * s).lineBetween(x + 12 * s, y + 5 * s, x + 9 * s, y + 9 * s);
+    } else {
+      g.lineStyle(1.2 * s, 0xffffff, 1);
+      g.beginPath().arc(x + 8 * s, y + 7 * s, 2.5 * s, -0.9, 0.9).strokePath();
+      g.beginPath().arc(x + 8 * s, y + 7 * s, 4.5 * s, -0.9, 0.9).strokePath();
+    }
+    const pad = 6 * layout.dpr;
+    this.soundZone.setPosition(x - pad, y - pad).setSize(size + 2 * pad, size + 2 * pad);
+    if (this.soundZone.input) this.soundZone.input.hitArea.setSize(size + 2 * pad, size + 2 * pad);
   }
 
   // ---------- controles de toque ----------
@@ -242,11 +271,13 @@ export default class UIScene extends Phaser.Scene {
     if (!this.paused) {
       this.paused = true;
       game.scene.pause();
+      setMusicPaused(true);
       this.showOverlay('Pausado', '', 'Toque para continuar', { menu: true });
     } else {
       this.paused = false;
       this.hideOverlay();
       game.scene.resume();
+      setMusicPaused(false);
     }
   }
 
@@ -306,6 +337,7 @@ export default class UIScene extends Phaser.Scene {
     this.paused = false;
     const game = this.scene.get('Game');
     if (game.scene.isPaused()) game.scene.resume();
+    setMusicPaused(false);
     game.scene.start('Menu');
   }
 }
