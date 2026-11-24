@@ -25,6 +25,7 @@ export default class GameScene extends Phaser.Scene {
     this.levelH = this.rows.length * TILE;
     this.state = 'playing';
     this.ending = null;
+    this.dogParked = false;
     this.hearts = PLAYER.maxHearts;
     this.coinCount = 0;
     this.facing = 1;
@@ -357,6 +358,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updateDog(delta) {
+    if (this.dogParked) return; // no final ele ja esta sentado ao lado da mamae
     const p = this.player;
     const d = this.dog;
     const last = this.dogTrail[this.dogTrail.length - 1];
@@ -511,6 +513,7 @@ export default class GameScene extends Phaser.Scene {
     p.setVisible(false);
     const mom = this.mom;
     mom.play('mamae-hug');
+    this.dogToMom();
     // gira (vira de lado e volta) e abraca
     this.tweens.add({
       targets: mom, scaleX: { from: 1, to: -1 }, duration: 260, yoyo: true, repeat: 2, ease: 'Sine.inOut',
@@ -524,6 +527,28 @@ export default class GameScene extends Phaser.Scene {
     this.time.delayedCall(2600, () => {
       const best = this.saveBest();
       this.game.events.emit('level-complete', { coins: this.coinCount, total: this.totalCoins(), best });
+    });
+  }
+
+  // no abraco o cachorro para de seguir o caminho do Raul (que terminou no ar, no pulo para o colo)
+  // e vai pelo chao ate o lado da mamae, onde senta
+  dogToMom() {
+    const d = this.dog;
+    const mom = this.mom;
+    this.dogTrail.length = 0;
+    this.dogParked = true;
+    this.zzz.setVisible(false);
+    const tx = mom.x - 52 * U;
+    const ty = mom.y;
+    d.setFlipX(tx < d.x);
+    d.play('dog-run', true);
+    const dist = Phaser.Math.Distance.Between(d.x, d.y, tx, ty);
+    this.tweens.add({
+      targets: d, x: tx, y: ty, duration: Math.max(200, dist * 6), ease: 'Sine.out',
+      onComplete: () => {
+        d.setFlipX(false);
+        d.play('dog-sit', true);
+      },
     });
   }
 
