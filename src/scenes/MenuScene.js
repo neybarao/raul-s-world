@@ -15,7 +15,12 @@ export default class MenuScene extends Phaser.Scene {
     this.game.events.emit('mode', 'menu');
     const last = this.registry.get('level');
     this.selected = Math.max(0, LEVELS.findIndex((l) => l.id === last));
-    this.prev = { left: false, right: false, jump: false };
+    // a cena e reaproveitada a cada volta ao menu: zera o estado da entrada anterior
+    this.starting = false;
+    this.cameras.main.resetFX();
+    this.cameras.main.fadeIn(200, 27, 27, 42);
+    // ignora o A que ainda estiver apertado (o toque que fechou a fase)
+    this.prev = { left: touch.left, right: touch.right, jump: true };
     this.cards = [];
 
     this.bg = this.add.graphics();
