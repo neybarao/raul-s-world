@@ -21,9 +21,9 @@ TEAR_HI = (200, 238, 255, 255)
 
 # poses no sheet (x0, y0, x1, y1)
 RAUL = {
-    "idle": (425, 105, 615, 478),
-    "run1": (685, 115, 915, 478),
-    "run2": (955, 110, 1215, 478),
+    "idle": (425, 100, 648, 482),
+    "run1": (686, 105, 921, 482),
+    "run2": (961, 100, 1228, 482),
     "jump": (1250, 15, 1505, 478),
 }
 FACE_SAD = (1040, 510, 1255, 712)    # cabeca triste (sem a camiseta)
@@ -43,6 +43,8 @@ RAUL_FRAME = (32 * U, 44 * U)
 DOG_FRAME = (26 * U, 20 * U)
 RAUL_COLORS = 64
 DOG_COLORS = 32
+RUN_SHEET = ROOT / "art/concept/run-cycle.jpg"  # ciclo de corrida gerado no Magnific (GPT 2.6), 4x2
+RUN_GRID = (4, 2)
 COIN = (985, 825, 1055, 925)
 FLAG = (1366, 740, 1505, 975)
 
@@ -51,7 +53,10 @@ FLAG = (1366, 740, 1505, 975)
 
 def is_bg(px):
     r, g, b = px[:3]
-    return min(r, g, b) > 150 and (max(r, g, b) - min(r, g, b)) < 40
+    if min(r, g, b) > 150 and (max(r, g, b) - min(r, g, b)) < 40:
+        return True  # fundo creme
+    # sombra cinza embaixo dos pes: sem cor e de brilho medio (contorno e mais escuro, meia e mais clara)
+    return (max(r, g, b) - min(r, g, b)) < 18 and 95 < (r + g + b) / 3 < 215
 
 
 def cut(sheet, box):
@@ -177,12 +182,41 @@ def outline(img):
     return out
 
 
-def place(frames, fw, fh):
+def place(frames, fw, fh, lift=None):
+    """Monta a tira de quadros alinhada pelo chao; lift[i] sobe o quadro i (pulo dentro da corrida)."""
     sheet = Image.new("RGBA", (fw * len(frames), fh), (0, 0, 0, 0))
     for i, f in enumerate(frames):
-        assert f.width <= fw and f.height <= fh, (i, f.size)
-        sheet.alpha_composite(f, (i * fw + (fw - f.width) // 2, fh - f.height))
+        up = (lift or {}).get(i, 0)
+        assert f.width <= fw and f.height + up <= fh, (i, f.size, up)
+        sheet.alpha_composite(f, (i * fw + (fw - f.width) // 2, fh - f.height - up))
     return sheet
+
+
+def run_cycle():
+    """Recorta os 8 quadros da corrida e guarda quanto cada um esta acima do chao da sua linha."""
+    img = Image.open(RUN_SHEET).convert("RGBA")
+    cols, rows = RUN_GRID
+    cw, ch = img.width // cols, img.height // rows
+    frames, bottoms = [], []
+    for r in range(rows):
+        row_frames = []
+        for c in range(cols):
+            cell = img.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch))
+            # acha onde o desenho termina dentro da celula antes de recortar
+            mask = cut_img(cell)
+            full = cell.convert("RGBA")
+            bbox_bottom = None
+            px = full.load()
+            for y in range(ch - 1, -1, -1):
+                if any(not is_bg(px[x, y]) for x in range(cw)):
+                    bbox_bottom = y
+                    break
+            row_frames.append((mask, bbox_bottom))
+        ground = max(b for _, b in row_frames)
+        for m, b in row_frames:
+            frames.append(m)
+            bottoms.append(ground - b)
+    return frames, bottoms
 
 
 # ---------- poses montadas ----------
@@ -201,7 +235,7 @@ def head_swap(body, face, head_h_ratio, head_w):
 
 
 # pecas da pose sentada, em coordenadas do sheet
-TORSO = (425, 280, 615, 410)       # tronco e bermuda do Raul parado
+TORSO = (425, 280, 648, 410)       # tronco e bermuda do Raul parado
 BACK_SHOE = (955, 360, 1013, 448)  # tenis de tras da corrida; espelhado fica de bico para cima
 
 
@@ -257,12 +291,19 @@ def main():
     raul_full["cry1"] = sitting(sheet, raul_full["idle"].width, 0)
     raul_full["cry2"] = sitting(sheet, raul_full["idle"].width, 1)
 
-    order = ["idle", "run1", "run2", "jump", "hurt", "cry1", "cry2"]
+    # corrida: 8 quadros, na mesma altura do Raul parado (o mais alto da corrida = 66 px)
+    run_full, run_lift = run_cycle()
+    run_scale = 66 / max(f.height for f in run_full)
+    run_small = [shrink(f, run_scale) for f in run_full]
+    lift = {1 + i: round(l * run_scale) for i, l in enumerate(run_lift)}
+
+    order = ["idle", "jump", "hurt", "cry1", "cry2"]
     small = [shrink(raul_full[k], RAUL_SCALE) for k in order]
+    small = small[:1] + run_small + small[1:]
     pal = build_palette(small, RAUL_COLORS)
     frames = [outline(apply_palette(s, pal)) for s in small]
-    # ordem final: 0 parado, 1 corrida1, 2 corrida2, 3 pulo, 4 dano, 5 choro1, 6 choro2
-    place(frames, *RAUL_FRAME).save(OUT / "raul.png")
+    # ordem final: 0 parado, 1-8 corrida, 9 pulo, 10 dano, 11 choro1, 12 choro2
+    place(frames, *RAUL_FRAME, lift=lift).save(OUT / "raul.png")
     print("raul", [f.size for f in frames])
 
     dog_small = [shrink(cut(sheet, DOG[k]), DOG_SCALE) for k in ("walk", "run", "sit", "sleep")]

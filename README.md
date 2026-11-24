@@ -40,12 +40,14 @@ Cada push na `main` publica no GitHub Pages pelo workflow `.github/workflows/dep
 O Raul, o cachorro e o rosto do HUD saem direto do character sheet de referência
 (`art/concept/character-sheet.png`) pelo `tools/pixelize_reference.py`: cada pose é recortada,
 reduzida com a mesma escala, convertida para uma paleta única e ganha contorno de 1 pixel.
+O ciclo de corrida (8 quadros) foi gerado no Magnific (GPT 2.6) a partir do character sheet e
+fica em `art/concept/run-cycle.jpg`.
 Moeda e bandeira também. Tiles, inimigo, corações e fundo são
 desenhados por código (`tools/make_tiles.py`).
 
 | Arquivo | Quadros |
 |---|---|
-| `sprites/raul.png` | 7 quadros de 64×88 (parado, corrida 1, corrida 2, pulo, dano, choro 1, choro 2) |
+| `sprites/raul.png` | 13 quadros de 64×88 (parado, corrida 1 a 8, pulo, dano, choro 1, choro 2) |
 | `sprites/dog.png` | 4 quadros de 52×40 (andando, correndo, sentado, dormindo) |
 | `enemy.png` | 3 quadros de 32×28 (andando 1, andando 2, amassado) |
 | `tiles.png` | 9 tiles de 32×32, margem 1 e espaçamento 2 |

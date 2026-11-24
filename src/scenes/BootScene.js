@@ -31,11 +31,11 @@ export default class BootScene extends Phaser.Scene {
     const a = this.anims;
     const f = (key, frames) => frames.map((frame) => ({ key, frame }));
     a.create({ key: 'raul-idle', frames: f('raul', [0]) });
-    a.create({ key: 'raul-run', frames: f('raul', [1, 2]), frameRate: 8, repeat: -1 });
-    a.create({ key: 'raul-jump', frames: f('raul', [3]) });
-    a.create({ key: 'raul-fall', frames: f('raul', [3]) });
-    a.create({ key: 'raul-hurt', frames: f('raul', [4]) });
-    a.create({ key: 'raul-cry', frames: f('raul', [5, 6]), frameRate: 3, repeat: -1 });
+    a.create({ key: 'raul-run', frames: f('raul', [1, 2, 3, 4, 5, 6, 7, 8]), frameRate: 14, repeat: -1 });
+    a.create({ key: 'raul-jump', frames: f('raul', [9]) });
+    a.create({ key: 'raul-fall', frames: f('raul', [9]) });
+    a.create({ key: 'raul-hurt', frames: f('raul', [10]) });
+    a.create({ key: 'raul-cry', frames: f('raul', [11, 12]), frameRate: 3, repeat: -1 });
     a.create({ key: 'dog-run', frames: f('dog', [0, 1]), frameRate: 8, repeat: -1 });
     a.create({ key: 'dog-stand', frames: f('dog', [0]) });
     a.create({ key: 'dog-sit', frames: f('dog', [2]) });
