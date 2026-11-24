@@ -2,10 +2,11 @@
 // entao o navegador percebe um arquivo novo, instala esta versao e descarta o cache antigo.
 const VERSION = '__BUILD_ID__';
 const CACHE = `raul-${VERSION}`;
-const CORE = ['./', './index.html', './manifest.webmanifest'];
+// todos os arquivos do jogo (lista gerada no build): baixados na instalacao, para jogar offline
+const PRECACHE = __PRECACHE__;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -33,14 +34,16 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE).then((c) => c.put('./index.html', copy));
           return res;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() => caches.match('./index.html', { ignoreVary: true }).then((r) => r || caches.match('./', { ignoreVary: true })))
     );
     return;
   }
 
   // codigo e imagens: tem hash ou ?v= no nome, entao cache primeiro e seguro
   event.respondWith(
-    caches.match(req).then((hit) =>
+    // ignoreVary: o arquivo foi guardado na instalacao, mas o jogo o pede como script/imagem
+    // (cabecalhos diferentes); sem isso o cache nao reconhece e falha offline
+    caches.match(req, { ignoreVary: true }).then((hit) =>
       hit ||
       fetch(req).then((res) => {
         if (res.ok) {

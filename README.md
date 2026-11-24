@@ -47,8 +47,10 @@ tecla M) liga e desliga o som, e a escolha fica guardada no aparelho. Na pausa o
 - **Atualizações:** cada publicação gera um `version.json` e um `sw.js` novos. O jogo confere a
   versão ao abrir, ao voltar para o app e a cada 5 minutos; se houver versão nova, mostra
   "Nova versão! Atualizando…" e recarrega sozinho.
-- Ícones em `public/icons/`, gerados no Magnific com o modelo GPT 2.6 a partir do character sheet
-  (original em `art/icon/icon-source.png`).
+- **Offline:** na primeira visita o service worker baixa o jogo inteiro (código, imagens e músicas).
+  Depois disso dá para jogar sem internet.
+- Ícones em `public/icons/`, gerados no Magnific (GPT 2.6) a partir dos sprites do jogo
+  (`art/icon/style-reference.png`); original em `art/icon/icon-source.png`.
 
 ## Desenvolvimento
 ```bash
