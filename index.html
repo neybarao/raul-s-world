@@ -19,8 +19,10 @@
       html, body { margin: 0; height: 100%; background: #1b1b2a; overflow: hidden; touch-action: none; overscroll-behavior: none; }
       body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
       #game { position: fixed; inset: 0; }
-      /* como app instalado, o jogo ocupa a altura toda da tela (veja cssSize em src/main.js) */
-      @media (display-mode: standalone), (display-mode: fullscreen) { #game { bottom: auto; height: 100vh; } }
+      /* No iPhone, como app instalado, o iOS nao deixa a pagina desenhar na faixa de baixo (altura
+         da barra de status): ali aparece so o fundo da pagina. Em pe, esse fundo tem a cor do
+         console, entao a faixa vira continuacao dele. */
+      @media (orientation: portrait) and (pointer: coarse) { html, body { background: #cfcabd; } }
       canvas { display: block; image-rendering: pixelated; }
       #update-toast {
         position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top)); transform: translate(-50%, -150%);
