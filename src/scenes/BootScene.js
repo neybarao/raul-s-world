@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { TILE } from '../config.js';
 
+// ?v= muda a cada build, entao o navegador sempre baixa a versao nova das imagens
+const asset = (path) => `assets/${path}?v=${__BUILD_ID__}`;
+
 export default class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
@@ -11,18 +14,17 @@ export default class BootScene extends Phaser.Scene {
     const bar = this.add.rectangle(width / 2 - 80, height / 2, 0, 6, 0xffd23f).setOrigin(0, 0.5);
     this.load.on('progress', (p) => (bar.width = 160 * p));
 
-    this.load.setPath('assets/');
-    this.load.spritesheet('raul', 'sprites/raul.png', { frameWidth: 20, frameHeight: 26 });
-    this.load.spritesheet('dog', 'sprites/dog.png', { frameWidth: 22, frameHeight: 16 });
-    this.load.spritesheet('enemy', 'enemy.png', { frameWidth: 16, frameHeight: 14 });
-    this.load.spritesheet('hearts', 'hearts.png', { frameWidth: 9, frameHeight: 8 });
-    this.load.image('raul-face', 'sprites/raul-face.png');
-    this.load.image('coin', 'sprites/coin.png');
-    this.load.image('flag', 'sprites/flag.png');
-    this.load.image('tiles', 'tiles.png');
-    this.load.image('cloud', 'cloud.png');
-    this.load.image('hills-far', 'hills-far.png');
-    this.load.image('trees-near', 'trees-near.png');
+    this.load.spritesheet('raul', asset('sprites/raul.png'), { frameWidth: 20, frameHeight: 26 });
+    this.load.spritesheet('dog', asset('sprites/dog.png'), { frameWidth: 22, frameHeight: 16 });
+    this.load.spritesheet('enemy', asset('enemy.png'), { frameWidth: 16, frameHeight: 14 });
+    this.load.spritesheet('hearts', asset('hearts.png'), { frameWidth: 9, frameHeight: 8 });
+    this.load.image('raul-face', asset('sprites/raul-face.png'));
+    this.load.image('coin', asset('sprites/coin.png'));
+    this.load.image('flag', asset('sprites/flag.png'));
+    this.load.image('tiles', asset('tiles.png'));
+    this.load.image('cloud', asset('cloud.png'));
+    this.load.image('hills-far', asset('hills-far.png'));
+    this.load.image('trees-near', asset('trees-near.png'));
   }
 
   create() {
