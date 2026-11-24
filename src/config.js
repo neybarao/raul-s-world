@@ -22,12 +22,18 @@ export const ENEMY = { speed: 28 * U };
 
 // bolinhas de piscina arremessadas com o botao B (ou X no teclado)
 export const BALL = {
-  speedX: 250 * U, // velocidade para frente (soma metade da velocidade do Raul)
-  speedY: 190 * U, // impulso para cima ao sair da mao
-  bounce: 0.6, // quanto quica no chao
-  lifeMs: 1600, // some depois desse tempo
+  speedX: 290 * U, // velocidade para frente (soma metade da velocidade do Raul)
+  speedY: 25 * U, // so um toque para cima: o arremesso vai reto para frente, quase sem arco
+  bounce: 0.55, // quanto quica no chao (vai pulando baixinho rente ao chao)
+  lifeMs: 1400, // some depois desse tempo
   max: 3, // quantas podem estar no ar ao mesmo tempo
-  cooldownMs: 220, // intervalo minimo entre dois arremessos
+  cooldownMs: 300, // intervalo minimo entre dois arremessos
+  windupMs: 70, // quanto tempo o Raul fica na pose de preparar antes de soltar
+  poseMs: 260, // duracao total da pose de arremesso
+  aimRange: 9 * TILE, // mira automatica: bicho a frente ate essa distancia
+  aimAbove: 3 * TILE, // ... e no maximo isso acima da mao
+  aimBelow: 2 * TILE, // ... ou isso abaixo
+  maxAimSpeedY: 260 * U, // limite da inclinacao da mira
 };
 
 export const DOG = {

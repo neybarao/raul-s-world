@@ -37,6 +37,7 @@ export default class GameScene extends Phaser.Scene {
     this.prevJumpHeld = false;
     this.prevThrowHeld = true; // ignora o B que ainda estiver apertado ao entrar na fase
     this.lastThrowAt = -9999;
+    this.throwUntil = 0;
     this.invulnerableUntil = 0;
     this.knockbackUntil = 0;
 
@@ -319,6 +320,7 @@ export default class GameScene extends Phaser.Scene {
 
     p.setFlipX(this.facing < 0);
     if (time < this.knockbackUntil + 150) p.play('raul-hurt', true);
+    else if (time < this.throwUntil) { /* pose de arremesso (quadros 13 e 14) */ }
     else if (!onGround) p.play(body.velocity.y < 0 ? 'raul-jump' : 'raul-fall', true);
     else if (Math.abs(body.velocity.x) > 12 * U) {
       p.play('raul-run', true);
@@ -460,19 +462,59 @@ export default class GameScene extends Phaser.Scene {
     if (this.state !== 'playing' || time - this.lastThrowAt < BALL.cooldownMs) return;
     if (this.balls.countActive() >= BALL.max) return;
     this.lastThrowAt = time;
+    // pose de arremesso: prepara (quadro 13) e solta (quadro 14); a bolinha sai da mao no 14
+    this.throwUntil = time + BALL.poseMs;
+    this.player.anims.stop();
+    this.player.setFrame(13);
+    this.time.delayedCall(BALL.windupMs, () => {
+      if (this.state !== 'playing') return;
+      this.player.setFrame(14);
+      this.spawnBall();
+    });
+  }
+
+  spawnBall() {
     const p = this.player;
     const f = this.facing;
-    const ball = this.balls.create(p.x + f * 14 * U, p.y - 28 * U, 'bolinhas', Phaser.Math.Between(0, 5));
+    // mao estendida no quadro 14: 15 px a frente do centro e 53 px acima dos pes
+    const x = p.x + f * 19;
+    const y = p.y - 53;
+    const vx = f * BALL.speedX + p.body.velocity.x * 0.5;
+    let vy = -BALL.speedY;
+    // mira no bicho mais perto a frente: a bolinha vai em linha (quase) reta ate ele
+    const target = this.nearestEnemyAhead(x, y, f);
+    if (target) {
+      const g = this.physics.world.gravity.y;
+      const t = Math.abs((target.x - x) / vx);
+      const ty = target.body.center.y;
+      vy = Phaser.Math.Clamp((ty - y - 0.5 * g * t * t) / t, -BALL.maxAimSpeedY, BALL.maxAimSpeedY);
+    }
+    const ball = this.balls.create(x, y, 'bolinhas', Phaser.Math.Between(0, 5));
     ball.setDepth(11);
     ball.body.setCircle(8, 1, 1);
     ball.setBounce(BALL.bounce);
-    ball.setVelocity(f * BALL.speedX + p.body.velocity.x * 0.5, -BALL.speedY);
+    ball.setVelocity(vx, vy);
     ball.spin = f;
     this.time.delayedCall(BALL.lifeMs, () => {
       if (!ball.active) return;
       ball.body.enable = false;
       this.tweens.add({ targets: ball, alpha: 0, duration: 200, onComplete: () => ball.destroy() });
     });
+  }
+
+  nearestEnemyAhead(x, y, f) {
+    let best = null;
+    let bestDx = BALL.aimRange;
+    this.enemies.children.each((e) => {
+      if (!e.active || e.dead) return;
+      const dx = (e.x - x) * f;
+      const dy = e.body.center.y - y;
+      if (dx > 8 && dx < bestDx && dy > -BALL.aimAbove && dy < BALL.aimBelow) {
+        best = e;
+        bestDx = dx;
+      }
+    });
+    return best;
   }
 
   ballHit(ball, e) {

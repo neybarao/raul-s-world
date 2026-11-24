@@ -75,6 +75,8 @@ Cada push na `main` publica no GitHub Pages pelo workflow `.github/workflows/dep
 O Raul, o cachorro e o rosto do HUD saem direto do character sheet de referência
 (`art/concept/character-sheet.png`) pelo `tools/pixelize_reference.py`: cada pose é recortada,
 reduzida com a mesma escala, convertida para uma paleta única e ganha contorno de 1 pixel.
+A pose de arremesso (2 quadros) foi gerada no Magnific (GPT 2.6) a partir do character sheet
+(`art/concept/throw-sheet.jpg`). A bolinha mira sozinha no bicho mais perto à frente.
 O ciclo de corrida (8 quadros) sai de um vídeo do Raul correndo no lugar, gerado no Magnific
 (Seedance 2.0 Mini) a partir do character sheet; os quadros estão em `art/concept/run-cycle-video.jpg`.
 Moeda e bandeira também. Tiles, inimigo, corações e fundo são
@@ -82,7 +84,7 @@ desenhados por código (`tools/make_tiles.py`).
 
 | Arquivo | Quadros |
 |---|---|
-| `sprites/raul.png` | 13 quadros de 64×88 (parado, corrida 1 a 8, pulo, dano, choro 1, choro 2) |
+| `sprites/raul.png` | 15 quadros de 64×88 (parado, corrida 1 a 8, pulo, dano, choro 1, choro 2, arremesso preparando, arremesso soltando) |
 | `sprites/dog.png` | 13 quadros de 52×40 (parado, sentado, dormindo, corrida 1 a 10) |
 | `sprites/mamae.png` | 4 quadros de 88×112 (agachada 1 e 2, abraçando o Raul 1 e 2) |
 | `bolinhas.png` | 6 quadros de 18×18 (bolinhas de piscina arremessadas com o B; `tools/make_bolinhas.py`) |

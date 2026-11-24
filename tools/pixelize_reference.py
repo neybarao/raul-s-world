@@ -52,6 +52,10 @@ RUN_FRAMES = 8
 # Raul sentado chorando: 2 quadros lado a lado, gerados no Magnific (GPT 2.6)
 CRY_SHEET = ROOT / "art/concept/cry-sheet.jpg"
 CRY_HEIGHT = 56  # sentado ele fica mais baixo que em pe (66)
+# Raul arremessando a bolinha: 2 quadros lado a lado (preparando, soltando), gerados no Magnific (GPT 2.6)
+# a partir do character sheet
+THROW_SHEET = ROOT / "art/concept/throw-sheet.jpg"
+THROW_HEIGHT = 66
 # Mamae: 4 quadros lado a lado (agachada x2, abracando o Raul x2), gerados no Magnific (GPT 2.6)
 MOM_SHEET = ROOT / "art/concept/mamae-sheet.jpg"
 # Corrida do cachorro: quadros de um video (Magnific, Seedance 2.0 Mini), mesma folha 4x4 com legendas
@@ -357,10 +361,29 @@ def main():
     small += [shrink(raul_full[k], cry_scale) for k in ("cry1", "cry2")]
     small = small[:1] + run_small + small[1:]
     pal = build_palette(small, RAUL_COLORS)
+    # arremesso: usa a mesma paleta (os quadros antigos ficam identicos) e alinha pela cabeca
+    throw = Image.open(THROW_SHEET).convert("RGBA")
+    half = throw.width // 2
+    throw_full = [cut_img(throw.crop((8, 8, half - 8, throw.height - 8))),
+                  cut_img(throw.crop((half + 8, 8, throw.width - 8, throw.height - 8)))]
+    throw_scale = THROW_HEIGHT / max(f.height for f in throw_full)
+    throw_small = [shrink(f, throw_scale) for f in throw_full]
+    for i, f in enumerate(throw_small):
+        head = f.crop((0, 0, f.width, int(f.height * 0.35))).getbbox()
+        anchor[len(small) + i] = (head[0] + head[2]) / 2
+    small += throw_small
     frames = [outline(apply_palette(s, pal)) for s in small]
-    # ordem final: 0 parado, 1-8 corrida, 9 pulo, 10 dano, 11 choro1, 12 choro2
-    place(frames, *RAUL_FRAME, lift=lift, anchor=anchor).save(OUT / "raul.png")
+    # ordem final: 0 parado, 1-8 corrida, 9 pulo, 10 dano, 11 choro1, 12 choro2,
+    # 13 arremesso (preparando), 14 arremesso (soltando)
+    strip = place(frames, *RAUL_FRAME, lift=lift, anchor=anchor)
+    strip.save(OUT / "raul.png")
     print("raul", [f.size for f in frames])
+    # onde fica a mao estendida no quadro 14 (a bolinha sai dali): ponta mais a direita na metade de cima
+    fw, fh = RAUL_FRAME
+    q = strip.crop((14 * fw, 0, 15 * fw, fh // 2))
+    hand_x = q.getbbox()[2]
+    col = [y for y in range(q.height) if q.getpixel((hand_x - 1, y))[3]]
+    print("mao no quadro 14: x =", hand_x - 1, "y =", sum(col) / len(col), "(quadro 64x88, pes em y=88)")
 
     # parado, sentado e dormindo vem do sheet; a corrida vem do video
     dog_still = [shrink(cut(sheet, DOG[k]), DOG_SCALE) for k in ("walk", "sit", "sleep")]
