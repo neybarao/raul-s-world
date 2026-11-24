@@ -52,6 +52,8 @@ export default class BootScene extends Phaser.Scene {
     a.create({ key: 'mamae-wait', frames: f('mamae', [0, 1]), frameRate: 2, repeat: -1 });
     a.create({ key: 'mamae-hug', frames: f('mamae', [2]) });
     a.create({ key: 'mamae-hug-love', frames: f('mamae', [3]) });
+    // giro: uma volta em 16 quadros, desenhada a partir de um video do Magnific; roda 2 voltas
+    a.create({ key: 'mamae-spin', frames: f('mamae', Array.from({ length: 16 }, (_, i) => 4 + i)), frameRate: 16, repeat: 1 });
     a.create({ key: 'dog-run', frames: f('dog', [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), frameRate: 20, repeat: -1 });
     a.create({ key: 'dog-stand', frames: f('dog', [0]) });
     a.create({ key: 'dog-sit', frames: f('dog', [1]) });

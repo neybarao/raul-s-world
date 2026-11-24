@@ -57,6 +57,9 @@ MOM_SHEET = ROOT / "art/concept/mamae-sheet.jpg"
 # Corrida do cachorro: quadros de um video (Magnific, Seedance 2.0 Mini), mesma folha 4x4 com legendas
 DOG_RUN_SHEET = ROOT / "art/concept/dog-run-video.jpg"
 DOG_RUN_FRAMES = 10
+# Giro no colo da mamae: uma volta completa em 16 quadros de um video (Magnific, Seedance 2.0 Mini)
+MOM_SPIN_SHEET = ROOT / "art/concept/mamae-giro-video.jpg"
+MOM_SPIN_FRAMES = 16
 MOM_STAND_HEIGHT = 104  # em pe, segurando o Raul
 MOM_FRAME = (88, 112)
 COIN = (985, 825, 1055, 925)
@@ -250,6 +253,23 @@ def run_cycle(sheet=None, count=None, head_side="center"):
     return frames, lifts, heads
 
 
+def mom_spin():
+    """Recorta a volta da mamae; devolve os desenhos e o x do centro dos pes dentro de cada um."""
+    img = Image.open(MOM_SPIN_SHEET).convert("RGBA")
+    cols, rows = RUN_GRID
+    cw, ch = img.width // cols, img.height // rows
+    frames, feet = [], []
+    for i in range(MOM_SPIN_FRAMES):
+        r, c = divmod(i, cols)
+        cell = img.crop((c * cw + 4, r * ch + 4, (c + 1) * cw - 4, r * ch + RUN_CELL_IMG_H - 4))
+        fig = clear_enclosed_bg(cut_img(cell))
+        h = fig.height
+        fb = fig.crop((0, int(h * 0.88), fig.width, h)).getbbox()
+        frames.append(fig)
+        feet.append((fb[0] + fb[2]) / 2)
+    return frames, feet
+
+
 def cut_img_keep_pos(img):
     """Como cut_img, mas sem recortar: o desenho fica na mesma posicao da imagem original."""
     w, h = img.size
@@ -362,9 +382,15 @@ def main():
     mom_full = [clear_enclosed_bg(cut_img(mom.crop((i * cw + 4, 4, (i + 1) * cw - 4, mom.height - 4)))) for i in range(4)]
     mscale = MOM_STAND_HEIGHT / max(mom_full[2].height, mom_full[3].height)
     mom_small = [shrink(f, mscale) for f in mom_full]
-    mpal = build_palette(mom_small, 64)
+    spin_full, spin_feet = mom_spin()
+    sscale = MOM_STAND_HEIGHT / spin_full[0].height
+    mom_small += [shrink(f, sscale) for f in spin_full]
+    mpal = build_palette(mom_small, 72)
     mom_frames = [outline(apply_palette(f, mpal)) for f in mom_small]
-    place(mom_frames, *MOM_FRAME).save(OUT / "mamae.png")
+    # ordem final: 0-1 agachada, 2 abraco, 3 abraco com coracao, 4-19 giro (uma volta)
+    # no giro o centro dos pes fica parado no meio do quadro
+    manchor = {4 + i: x * sscale + 1 for i, x in enumerate(spin_feet)}
+    place(mom_frames, *MOM_FRAME, anchor=manchor).save(OUT / "mamae.png")
     print("mamae", [f.size for f in mom_frames])
 
     face = shrink(cut(sheet, FACE_HAPPY), 24 * U / 236)

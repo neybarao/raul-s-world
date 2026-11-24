@@ -517,17 +517,16 @@ export default class GameScene extends Phaser.Scene {
     const mom = this.mom;
     mom.play('mamae-hug');
     this.dogToMom();
-    // gira (vira de lado e volta) e abraca
-    this.tweens.add({
-      targets: mom, scaleX: { from: 1, to: -1 }, duration: 260, yoyo: true, repeat: 2, ease: 'Sine.inOut',
-      onComplete: () => {
-        mom.setScale(1);
+    // pega no colo, gira duas voltas (animacao desenhada) e abraca
+    this.time.delayedCall(250, () => {
+      mom.play('mamae-spin');
+      mom.once('animationcomplete-mamae-spin', () => {
         mom.play('mamae-hug-love');
         this.burstHearts(mom.x, mom.y - mom.height * 0.75);
-      },
+      });
     });
     this.cameras.main.pan(mom.x - 20 * U, mom.y - 40 * U, 600, 'Sine.easeInOut');
-    this.time.delayedCall(2600, () => {
+    this.time.delayedCall(3600, () => {
       const best = this.saveBest();
       this.game.events.emit('level-complete', { coins: this.coinCount, total: this.totalCoins(), best });
     });
