@@ -124,7 +124,7 @@ export default class GameScene extends Phaser.Scene {
     this.respawnPoint = { ...this.spawn };
 
     this.player = this.physics.add.sprite(this.spawn.x, this.spawn.y, 'raul', 0).setOrigin(0.5, 1);
-    this.player.body.setSize(10, 20).setOffset(5, 6);
+    this.player.body.setSize(10, 24).setOffset(11, 20);
     this.player.body.setMaxVelocityY(520);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);

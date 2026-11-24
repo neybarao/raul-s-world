@@ -14,8 +14,8 @@ export default class BootScene extends Phaser.Scene {
     const bar = this.add.rectangle(width / 2 - 80, height / 2, 0, 6, 0xffd23f).setOrigin(0, 0.5);
     this.load.on('progress', (p) => (bar.width = 160 * p));
 
-    this.load.spritesheet('raul', asset('sprites/raul.png'), { frameWidth: 20, frameHeight: 26 });
-    this.load.spritesheet('dog', asset('sprites/dog.png'), { frameWidth: 22, frameHeight: 16 });
+    this.load.spritesheet('raul', asset('sprites/raul.png'), { frameWidth: 32, frameHeight: 44 });
+    this.load.spritesheet('dog', asset('sprites/dog.png'), { frameWidth: 26, frameHeight: 20 });
     this.load.spritesheet('enemy', asset('enemy.png'), { frameWidth: 16, frameHeight: 14 });
     this.load.spritesheet('hearts', asset('hearts.png'), { frameWidth: 9, frameHeight: 8 });
     this.load.image('raul-face', asset('sprites/raul-face.png'));
@@ -30,16 +30,16 @@ export default class BootScene extends Phaser.Scene {
   create() {
     const a = this.anims;
     const f = (key, frames) => frames.map((frame) => ({ key, frame }));
-    a.create({ key: 'raul-idle', frames: f('raul', [0, 0, 0, 0, 0, 0, 0, 1]), frameRate: 4, repeat: -1 });
-    a.create({ key: 'raul-run', frames: f('raul', [2, 3, 4, 5]), frameRate: 10, repeat: -1 });
-    a.create({ key: 'raul-jump', frames: f('raul', [6]) });
-    a.create({ key: 'raul-fall', frames: f('raul', [7]) });
-    a.create({ key: 'raul-hurt', frames: f('raul', [8]) });
-    a.create({ key: 'raul-cry', frames: f('raul', [9, 10]), frameRate: 3, repeat: -1 });
-    a.create({ key: 'dog-run', frames: f('dog', [0, 1]), frameRate: 9, repeat: -1 });
-    a.create({ key: 'dog-stand', frames: f('dog', [2]) });
-    a.create({ key: 'dog-sit', frames: f('dog', [3]) });
-    a.create({ key: 'dog-sleep', frames: f('dog', [4]) });
+    a.create({ key: 'raul-idle', frames: f('raul', [0]) });
+    a.create({ key: 'raul-run', frames: f('raul', [1, 2]), frameRate: 8, repeat: -1 });
+    a.create({ key: 'raul-jump', frames: f('raul', [3]) });
+    a.create({ key: 'raul-fall', frames: f('raul', [3]) });
+    a.create({ key: 'raul-hurt', frames: f('raul', [4]) });
+    a.create({ key: 'raul-cry', frames: f('raul', [5, 6]), frameRate: 3, repeat: -1 });
+    a.create({ key: 'dog-run', frames: f('dog', [0, 1]), frameRate: 8, repeat: -1 });
+    a.create({ key: 'dog-stand', frames: f('dog', [0]) });
+    a.create({ key: 'dog-sit', frames: f('dog', [2]) });
+    a.create({ key: 'dog-sleep', frames: f('dog', [3]) });
     a.create({ key: 'enemy-walk', frames: a.generateFrameNumbers('enemy', { frames: [0, 1] }), frameRate: 5, repeat: -1 });
 
     this.registry.set('tile', TILE);

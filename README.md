@@ -26,16 +26,16 @@ Cada push na `main` publica no GitHub Pages pelo workflow `.github/workflows/dep
 - `art/concept/`: imagens conceituais originais
 - `tools/`: scripts Python que geram os sprites provisórios
 
-## Arte provisória
-O Raul e o cachorro são desenhados pixel a pixel em `tools/pixel_sprites.py` (cada letra é um
-pixel de uma paleta fixa). O rosto do HUD, a moeda e a bandeira ainda são recortes das imagens
-conceituais (`tools/extract_sprites.py`). Tiles, inimigo, corações e fundo são desenhados por código
-(`tools/make_tiles.py`). Tudo deve ser trocado pela arte final em grade de pixels real,
-mantendo os mesmos tamanhos de quadro:
+## Arte
+O Raul, o cachorro e o rosto do HUD saem direto do character sheet de referência
+(`art/concept/character-sheet.png`) pelo `tools/pixelize_reference.py`: cada pose é recortada,
+reduzida com a mesma escala, convertida para uma paleta única e ganha contorno de 1 pixel.
+Moeda e bandeira vêm de `tools/extract_sprites.py`. Tiles, inimigo, corações e fundo são
+desenhados por código (`tools/make_tiles.py`).
 
 | Arquivo | Quadros |
 |---|---|
-| `sprites/raul.png` | 9 quadros de 20×26 (parado, piscando, corrida 1 a 4, subindo, caindo, dano) |
-| `sprites/dog.png` | 5 quadros de 22×16 (correndo 1 e 2, parado, sentado, dormindo) |
+| `sprites/raul.png` | 7 quadros de 32×44 (parado, corrida 1, corrida 2, pulo, dano, choro 1, choro 2) |
+| `sprites/dog.png` | 4 quadros de 26×20 (andando, correndo, sentado, dormindo) |
 | `enemy.png` | 3 quadros de 16×14 (andando 1, andando 2, amassado) |
 | `tiles.png` | 9 tiles de 16×16, margem 1 e espaçamento 2 |

@@ -1,8 +1,8 @@
 """Recorta sprites placeholder do character sheet conceitual.
 
 Uso: python3 tools/extract_sprites.py
-Gera PNGs com fundo transparente em public/assets/sprites/ (rosto do HUD, moeda e bandeira).
-O Raul e o cachorro agora sao desenhados pixel a pixel em tools/pixel_sprites.py.
+Gera PNGs com fundo transparente em public/assets/sprites/ (moeda e bandeira).
+Raul, cachorro e rosto do HUD saem de tools/pixelize_reference.py.
 Esses sprites sao provisorios: a arte final deve ser desenhada em grade de pixels real.
 """
 from collections import deque
@@ -114,7 +114,7 @@ def main():
     for name, box, h in CROPS:
         sprite = downscale(remove_bg(sheet.crop(box)), h)
         frames[name] = sprite
-        if name in ("raul-face", "coin", "flag"):
+        if name in ("coin", "flag"):
             sprite.save(OUT / f"{name}.png")
         print(name, sprite.size)
 
