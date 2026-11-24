@@ -40,11 +40,19 @@ export default class MenuScene extends Phaser.Scene {
       card.best = this.add.text(0, 0, '', { ...FONT, color: '#ffd23f' }).setOrigin(0.5, 0);
       card.add([card.frame, card.thumb, card.label, card.best]);
       card.zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
-      card.zone.on('pointerup', () => {
+      card.zone.on('pointerup', (pointer) => {
+        if (this.isSwipe(pointer)) return; // arrastar o carrossel nao conta como toque
         if (this.selected === i) this.start(i);
         else this.select(i);
       });
       this.cards.push(card);
+    });
+    this.dots = this.add.graphics();
+    this.carouselReady = false;
+    // carrossel: arrastar o dedo para os lados troca de fase
+    this.input.on('pointerup', (pointer) => {
+      if (!this.carousel || !this.isSwipe(pointer)) return;
+      this.move(pointer.upX < pointer.downX ? 1 : -1);
     });
 
     const kb = this.input.keyboard;
@@ -64,6 +72,10 @@ export default class MenuScene extends Phaser.Scene {
     });
   }
 
+  isSwipe(pointer) {
+    return Math.abs(pointer.upX - pointer.downX) > 24 * layout.dpr;
+  }
+
   bestText(id) {
     try {
       const b = Number(localStorage.getItem(`raul-best-${id}`)) || 0;
@@ -75,10 +87,12 @@ export default class MenuScene extends Phaser.Scene {
 
   layout() {
     computeLayout(this.game);
+    this.carouselReady = false; // ao redimensionar, reposiciona sem animacao
     const { width: w, height: h, portrait, controlsHeight: ch, safeTop, dpr } = layout;
     const areaH = h - ch;
     this.cameras.main.setViewport(0, 0, w, areaH).setSize(w, areaH);
-    // em pe: lista de uma coluna (miniatura a esquerda, nome grande a direita); deitado: grade de 4
+    // em pe: carrossel (um cartao grande por vez, desliza para os lados); deitado: grade de 4
+    this.carousel = portrait;
     this.cols = portrait ? 1 : 4;
     const rows = Math.ceil(LEVELS.length / this.cols);
     const s = Math.max(2, Math.floor(Math.min(w, areaH) / 200));
@@ -91,7 +105,7 @@ export default class MenuScene extends Phaser.Scene {
     const top = safeTop + 6 * s;
     // logo em escala inteira (pixels nitidos), no maximo 70% da largura e 30% da altura (20% em pe)
     const src = this.textures.get('logo').getSourceImage();
-    const lk = Math.max(1, Math.floor(Math.min((w * 0.7) / src.width, (areaH * (portrait ? 0.2 : 0.3)) / src.height)));
+    const lk = Math.max(1, Math.floor(Math.min((w * 0.7) / src.width, (areaH * (portrait ? 0.24 : 0.3)) / src.height)));
     this.tweens.killTweensOf(this.logo);
     this.logo.setScale(lk).setPosition(w / 2, top);
     // flutua de leve, 2 pixels da arte
@@ -105,7 +119,8 @@ export default class MenuScene extends Phaser.Scene {
     // texto nunca menor que isso na tela (em pixels CSS), para dar para ler no celular
     const minLabel = 12 * dpr;
     const minBest = 9 * dpr;
-    if (portrait) this.layoutList(w, s, gridTop, gridBottom, gap, minLabel, minBest);
+    this.dots.clear();
+    if (portrait) this.layoutCarousel(w, s, gridTop, gridBottom, minLabel, minBest);
     else this.layoutGrid(w, s, rows, gridTop, gridBottom, gap, minLabel, minBest);
 
     // Raul e o cachorro correndo no rodape
@@ -137,8 +152,8 @@ export default class MenuScene extends Phaser.Scene {
       const y = gridTop + row * (cardH + gap);
       const th = cw * (108 / 192);
       card.setPosition(x, y);
-      card.w = cw;
-      card.h = cardH;
+      card.cardW = cw;
+      card.cardH = cardH;
       card.thumb.setDisplaySize(cw - 4 * s, th - 4 * s).setPosition(2 * s, 2 * s);
       card.label.setOrigin(0.5, 0).setFontSize(Math.max(minLabel, Math.round(6.5 * s * k))).setStroke('#1b1b2a', s)
         .setPosition(cw / 2, th + 1 * s);
@@ -149,33 +164,60 @@ export default class MenuScene extends Phaser.Scene {
     });
   }
 
-  layoutList(w, s, gridTop, gridBottom, gap, minLabel, minBest) {
-    const n = LEVELS.length;
-    const cw = Math.min(w - 2 * gap, 520 * layout.dpr);
-    const rowH = Math.min((gridBottom - gridTop - gap * (n - 1)) / n, cw * 0.3);
-    const pad = Math.max(2 * s, Math.round(rowH * 0.07));
-    const th = rowH - 2 * pad;
-    const tw = th * (192 / 108);
-    const tx = pad + tw + pad * 2;
-    // o nome mais comprido tem que caber ao lado da miniatura (fonte mono: ~0,62 da altura por letra)
-    const longest = Math.max(...LEVELS.map((lv) => lv.name.length));
-    const font = Math.max(minLabel, Math.min(rowH * 0.3, (cw - tx - pad) / (longest * 0.62)));
-    const x = (w - cw) / 2;
-    const used = n * rowH + (n - 1) * gap;
-    const y0 = gridTop + Math.max(0, (gridBottom - gridTop - used) / 2);
+  layoutCarousel(w, s, top, bottom, minLabel, minBest) {
+    const dpr = layout.dpr;
+    const dotsH = 14 * dpr;
+    let cw = Math.min(w * 0.84, 560 * dpr);
+    const name = Math.max(minLabel * 1.6, Math.round(cw * 0.075));
+    const best = Math.max(minBest * 1.4, Math.round(name * 0.58));
+    const pad = Math.round(cw * 0.03);
+    const labelH = pad * 2 + name + best * 1.6;
+    // a altura do cartao tem que caber entre o subtitulo e os pontinhos
+    const maxH = bottom - top - dotsH;
+    const thumbFor = (c) => (c - 2 * pad) * (108 / 192);
+    if (thumbFor(cw) + pad + labelH > maxH) cw = (maxH - pad - labelH) * (192 / 108) + 2 * pad;
+    const th = thumbFor(cw);
+    const ch = pad + th + labelH;
+    this.carouselGeo = { w, cw, ch, gap: Math.round(cw * 0.06), y: top + Math.max(0, (maxH - ch) / 2) };
 
     this.cards.forEach((card, i) => {
-      const y = y0 + i * (rowH + gap);
-      card.setPosition(x, y);
-      card.w = cw;
-      card.h = rowH;
-      card.thumb.setDisplaySize(tw, th).setPosition(pad, pad);
-      card.label.setOrigin(0, 0.5).setFontSize(Math.round(font)).setStroke('#1b1b2a', s)
-        .setPosition(tx, rowH * 0.4);
-      card.best.setOrigin(0, 0.5).setFontSize(Math.round(Math.max(minBest, font * 0.62))).setStroke('#1b1b2a', s)
-        .setPosition(tx, rowH * 0.72).setText(this.bestText(LEVELS[i].id));
-      card.zone.setPosition(x, y).setSize(cw, rowH);
-      card.zone.input.hitArea.setSize(cw, rowH);
+      card.cardW = cw;
+      card.cardH = ch;
+      card.thumb.setDisplaySize(cw - 2 * pad, th).setPosition(pad, pad);
+      card.label.setOrigin(0.5, 0).setFontSize(name).setStroke('#1b1b2a', s).setPosition(cw / 2, pad + th + pad);
+      card.best.setOrigin(0.5, 0).setFontSize(best).setStroke('#1b1b2a', s)
+        .setPosition(cw / 2, pad + th + pad + name * 1.25).setText(this.bestText(LEVELS[i].id));
+    });
+
+    // pontinhos embaixo: quantas fases e qual esta escolhida
+    const dy = this.carouselGeo.y + ch + dotsH * 0.8;
+    this.dotsGeo = { y: dy, r: 3 * dpr, gap: 12 * dpr };
+  }
+
+  // posiciona os cartoes do carrossel em volta do escolhido (com animacao ao trocar)
+  positionCarousel(animate) {
+    const g = this.carouselGeo;
+    if (!g) return;
+    this.cards.forEach((card, i) => {
+      const d = i - this.selected;
+      const sc = d === 0 ? 1 : 0.86;
+      const x = g.w / 2 - g.cw / 2 + d * (g.cw + g.gap) + (g.cw * (1 - sc)) / 2;
+      const y = g.y + (g.ch * (1 - sc)) / 2;
+      const props = { x, y, scaleX: sc, scaleY: sc, alpha: d === 0 ? 1 : Math.abs(d) === 1 ? 0.6 : 0 };
+      this.tweens.killTweensOf(card);
+      if (animate) this.tweens.add({ targets: card, ...props, duration: 220, ease: 'Cubic.out' });
+      else card.setPosition(x, y).setScale(sc).setAlpha(props.alpha);
+      // area de toque fica onde o cartao vai parar
+      card.zone.setPosition(x, y).setSize(g.cw * sc, g.ch * sc);
+      card.zone.input.hitArea.setSize(g.cw * sc, g.ch * sc);
+    });
+    const { y, r, gap } = this.dotsGeo;
+    const x0 = g.w / 2 - ((LEVELS.length - 1) * gap) / 2;
+    this.dots.clear();
+    LEVELS.forEach((_, i) => {
+      const on = i === this.selected;
+      this.dots.fillStyle(0x1b1b2a, 0.6).fillCircle(x0 + i * gap, y + r * 0.4, (on ? r * 1.6 : r) + r * 0.4);
+      this.dots.fillStyle(on ? 0xffd23f : 0xffffff, on ? 1 : 0.8).fillCircle(x0 + i * gap, y, on ? r * 1.6 : r);
     });
   }
 
@@ -184,10 +226,12 @@ export default class MenuScene extends Phaser.Scene {
     this.cards.forEach((card, i) => {
       const on = i === this.selected;
       card.frame.clear()
-        .fillStyle(0x1b1b2a, 0.85).fillRoundedRect(0, 0, card.w, card.h, 3 * s)
-        .lineStyle(on ? 2 * s : s, on ? 0xffd23f : 0xffffff, on ? 1 : 0.5).strokeRoundedRect(0, 0, card.w, card.h, 3 * s);
-      card.setScale(on ? (this.cols === 1 ? 1.02 : 1.03) : 1);
+        .fillStyle(0x1b1b2a, 0.85).fillRoundedRect(0, 0, card.cardW, card.cardH, 3 * s)
+        .lineStyle(on ? 2 * s : s, on ? 0xffd23f : 0xffffff, on ? 1 : 0.5).strokeRoundedRect(0, 0, card.cardW, card.cardH, 3 * s);
+      if (!this.carousel) card.setScale(on ? 1.03 : 1).setAlpha(1);
     });
+    if (this.carousel) this.positionCarousel(this.carouselReady);
+    this.carouselReady = true;
   }
 
   select(i) {

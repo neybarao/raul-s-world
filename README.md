@@ -10,7 +10,8 @@ No fim de cada fase o Raul corre para o colo da mamãe (agachada de braços aber
 gira e abraça. A mamãe foi desenhada no Magnific a partir de uma descrição.
 
 Antes de jogar aparece o seletor de fases (toque no cartão duas vezes, ou direcional + A, ou setas + Enter).
-No celular em pé as fases aparecem em lista (miniatura e nome grande); deitado, em grade de 4:
+No celular em pé as fases aparecem num carrossel (um cartão grande por vez: deslize o dedo ou use o
+direcional; tocar no cartão do meio começa a fase); deitado, em grade de 4:
 
 | Fase | Desafio |
 |---|---|
@@ -21,6 +22,7 @@ No celular em pé as fases aparecem em lista (miniatura e nome grande); deitado,
 | Praia | caranguejos e píer de madeira sobre o mar |
 | Quartel da Mamãe | capivaras no gramado, caixotes em escada e pneus de mola |
 | Escolinha | aviõezinhos de papel voando pela sala e pilhas de livros |
+| Itália | Toscana: morros em degraus, pombos de praça e telhados de terracota sobre os buracos |
 
 Os fundos das fases novas foram gerados no Magnific (GPT 2.6) em pixel art 32 bits, usando as
 cores das fotos de férias da família (só as paletas foram enviadas, não as fotos). Os mapas ficam

@@ -1,4 +1,4 @@
-"""Miniaturas das fases para o seletor (public/assets/thumbs/<fase>.png, 192x108).
+"""Miniaturas das fases para o seletor (public/assets/thumbs/<fase>.png, 384x216).
 
 Uso: python3 tools/make_thumbs.py  (rode depois de make_tiles.py e make_backgrounds.py)
 """
@@ -9,7 +9,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 A = ROOT / "public/assets"
 OUT = A / "thumbs"
-TW, TH = 192, 108
+TW, TH = 384, 216  # mesma resolucao da arte (o carrossel mostra a miniatura grande)
 
 
 def ground_strip(tiles_png, width):
@@ -48,6 +48,6 @@ def make(level, bg, tiles):
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     make("floresta", True, "tiles")
-    for lv in ("aquario", "bolinhas", "parque", "praia", "quartel", "escolinha"):
+    for lv in ("aquario", "bolinhas", "parque", "praia", "quartel", "escolinha", "italia"):
         make(lv, True, f"tiles-{lv}")
     print("ok")

@@ -6,6 +6,7 @@ import parque from './parque.js';
 import praia from './praia.js';
 import quartel from './quartel.js';
 import escolinha from './escolinha.js';
+import italia from './italia.js';
 
 // faceRight: o desenho olha para a direita (os outros olham para a esquerda ou sao simetricos)
 // tipos de inimigo:
@@ -18,6 +19,7 @@ export const ENEMIES = {
   patinho: { key: 'enemy-patinho', frame: [32, 32], body: [24, 24, 4, 7], kind: 'walker', faceRight: true },
   caranguejo: { key: 'enemy-caranguejo', frame: [32, 32], body: [24, 16, 4, 15], kind: 'walker' },
   capivara: { key: 'enemy-capivara', frame: [32, 32], body: [26, 18, 3, 12], kind: 'walker', faceRight: true },
+  pombo: { key: 'enemy-pombo', frame: [32, 32], body: [22, 20, 6, 10], kind: 'walker' },
   aviao: { key: 'enemy-aviao', frame: [32, 32], body: [24, 12, 4, 10], kind: 'floater', amp: [72, 12], faceRight: true },
 };
 
@@ -59,6 +61,11 @@ export const LEVELS = [
     id: 'escolinha', name: 'Escolinha', map: escolinha, enemy: 'aviao',
     music: 'musica-ar-livre',
     sky: '#978a66', tiles: 'tiles-escolinha', mola: 'mola-escolinha', bg: 'bg-escolinha',
+  },
+  {
+    id: 'italia', name: 'Itália', map: italia, enemy: 'pombo',
+    music: 'musica-ar-livre',
+    sky: '#4fa8f1', tiles: 'tiles-italia', mola: 'mola-italia', bg: 'bg-italia',
   },
 ];
 

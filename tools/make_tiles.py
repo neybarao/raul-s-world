@@ -268,6 +268,11 @@ THEMES = {
         "body": "grid", "body_cols": [(150, 130, 112), (190, 170, 150), (207, 186, 169), (225, 207, 190), (240, 228, 214)],
         "plat": "books", "plat_cols": [(213, 104, 39), (76, 160, 90), (60, 110, 200), (230, 190, 40), (246, 154, 82)],
     },
+    "italia": {
+        "top": "moss", "top_cols": [(52, 96, 40), (78, 128, 46), (110, 156, 60), (150, 186, 84), (200, 218, 130)],
+        "body": "stone", "body_cols": [(110, 84, 62), (150, 118, 88), (186, 156, 118), (212, 186, 148), (236, 216, 182)],
+        "plat": "roof", "plat_cols": [(120, 46, 26), (168, 70, 38), (204, 98, 54), (230, 136, 84), (248, 182, 130)],
+    },
     "praia": {
         "top": "sand", "top_cols": [(190, 172, 130), (214, 198, 160), (232, 222, 192), (244, 238, 216), (255, 252, 240)],
         "body": "speckle", "body_cols": [(150, 126, 90), (178, 152, 110), (200, 178, 136), (220, 202, 164), (236, 224, 196)],
@@ -308,6 +313,24 @@ def body_tile(style, C, rnd):
                 d.line([gx + s - 1, gy, gx + s - 1, gy + s - 1], fill=C[1])
                 if rnd.random() < 0.15:
                     d.point((gx + 3, gy + 3), fill=C[4])
+    elif style == "stone":
+        # muro de pedra toscano: blocos claros com alguns tijolos de terracota
+        rows = [(0, 9), (10, 20), (21, 31)]
+        for ri, (y0, y1) in enumerate(rows):
+            x = -6 if ri % 2 else 0
+            while x < T:
+                bw = rnd.choice((10, 12, 14))
+                terra = rnd.random() < 0.2
+                face = (196, 104, 64) if terra else C[2]
+                hi = (226, 146, 100) if terra else C[3]
+                d.rectangle([x, y0, x + bw - 1, y1], fill=face)
+                d.line([x, y0, x + bw - 2, y0], fill=hi)
+                d.line([x, y0, x, y1 - 1], fill=hi)
+                d.line([x + bw - 1, y0, x + bw - 1, y1], fill=C[0])
+                d.line([x, y1, x + bw - 1, y1], fill=C[0])
+                if not terra and rnd.random() < 0.5:
+                    d.point((x + rnd.randrange(2, bw - 2), y0 + rnd.randrange(2, max(3, y1 - y0 - 1))), fill=C[1])
+                x += bw
     elif style in ("speckle", "dirt"):
         for y in range(T):
             for x in range(T):
@@ -397,6 +420,18 @@ def theme_platform(theme, part, rnd):
         for x in (4, T - 5):
             d.ellipse([x - 1, 6, x + 1, 8], fill=C[0])
         d.line([0, 4, T - 1, 4], fill=C[4])
+    elif style == "roof":
+        # telhado de telhas coloniais de terracota (coppi)
+        d.rectangle([0, 6, T - 1, 21], fill=C[1])
+        for x in range(0, T, 8):
+            d.rectangle([x, 6, x + 6, 21], fill=C[2])
+            d.line([x + 1, 7, x + 1, 20], fill=C[3])
+            d.point((x + 2, 8), fill=C[4])
+            d.line([x + 6, 7, x + 6, 21], fill=C[0])
+        d.line([0, 13, T - 1, 13], fill=C[0])
+        d.line([0, 14, T - 1, 14], fill=C[3])
+        d.line([0, 5, T - 1, 5], fill=C[4])
+        d.line([0, 22, T - 1, 22], fill=OUTLINE)
     elif style == "coral":
         d.rectangle([0, 6, T - 1, 22], fill=(84, 112, 116))
         d.line([0, 22, T - 1, 22], fill=OUTLINE)
@@ -470,6 +505,7 @@ def make_springs():
         "praia": ("ring", (240, 120, 40), (255, 255, 255)),
         "quartel": ("tire", (40, 40, 44), (90, 90, 96)),
         "escolinha": ("tramp", (213, 104, 39), (246, 154, 82)),
+        "italia": ("board", (0, 140, 70), (240, 240, 230)),
     }
     for theme, (kind, c1, c2) in looks.items():
         img = Image.new("RGBA", (64, 24), (0, 0, 0, 0))
@@ -662,6 +698,48 @@ def make_theme_enemies():
         d.line([x0 + 3, 20 + tilt, x0 + 8, 20 + tilt], fill=(120, 170, 230))
         d.line([x0 + 1, 23 + tilt, x0 + 6, 23 + tilt], fill=(120, 170, 230))
     img.save(OUT / "enemy-aviao.png")
+
+
+
+def make_enemy_italia():
+    """Pombo de praca italiana, olhando para a esquerda: 3 quadros 32x32 (andando 1, 2, amassado)."""
+    W = 32
+    img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    gray, grayh, grayd = (150, 156, 176), (196, 200, 214), (100, 104, 126)
+    neck, neckh, feet = (90, 150, 120), (170, 110, 180), (240, 120, 70)
+    for f in range(2):
+        x0, bob = f * W, f
+        # patinhas
+        for i, lx in enumerate((14, 19)):
+            off = 1 if (i + f) % 2 else -1
+            d.line([x0 + lx, 25, x0 + lx + off, 30], fill=feet, width=2)
+        # rabo
+        d.polygon([(x0 + 22, 18), (x0 + 31, 15 + bob), (x0 + 30, 22), (x0 + 22, 23)], fill=OUTLINE)
+        d.polygon([(x0 + 23, 19), (x0 + 30, 16 + bob), (x0 + 29, 21), (x0 + 23, 22)], fill=grayd)
+        # corpo
+        d.ellipse([x0 + 7, 13, x0 + 27, 27], fill=OUTLINE)
+        d.ellipse([x0 + 8, 14, x0 + 26, 26], fill=gray)
+        d.ellipse([x0 + 15, 15, x0 + 25, 21], fill=grayh)  # asa
+        d.line([x0 + 17, 20, x0 + 24, 20], fill=grayd)
+        d.line([x0 + 18, 22, x0 + 24, 22], fill=grayd)
+        # pescoco furta-cor e cabeca (balanca para frente ao andar)
+        hx = x0 + 4 - f * 2
+        d.ellipse([hx + 3, 9 + bob, hx + 12, 19 + bob], fill=OUTLINE)
+        d.ellipse([hx + 4, 10 + bob, hx + 11, 18 + bob], fill=neck)
+        d.point((hx + 9, 14 + bob), fill=neckh)
+        d.point((hx + 8, 15 + bob), fill=neckh)
+        d.ellipse([hx + 1, 4 + bob, hx + 10, 13 + bob], fill=OUTLINE)
+        d.ellipse([hx + 2, 5 + bob, hx + 9, 12 + bob], fill=gray)
+        d.polygon([(hx + 2, 8 + bob), (hx - 2, 10 + bob), (hx + 2, 10 + bob)], fill=(60, 50, 50))  # bico
+        d.rectangle([hx + 4, 7 + bob, hx + 5, 8 + bob], fill=(240, 120, 40))  # olho laranja
+        d.point((hx + 4, 7 + bob), fill=OUTLINE)
+    x0 = W * 2  # amassado
+    d.ellipse([x0 + 3, 23, x0 + 29, 31], fill=OUTLINE)
+    d.ellipse([x0 + 4, 24, x0 + 28, 30], fill=gray)
+    d.ellipse([x0 + 4, 24, x0 + 11, 29], fill=neck)
+    d.line([x0 + 14, 26, x0 + 24, 26], fill=grayd)
+    img.save(OUT / "enemy-pombo.png")
 
 
 if __name__ == "__main__":

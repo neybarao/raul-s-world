@@ -175,7 +175,32 @@ def escolinha():
     L.save("escolinha", "Escolinha")
 
 
+def italia():
+    """Toscana: morros em degraus, pombos de praca e telhados de terracota sobre os buracos."""
+    L = Level()
+    L.ground(0, 22); L.put(3, G - 1, "P")
+    L.coins(range(8, 12), G - 2); L.put(13, G - 1, "e"); L.put(19, G - 1, "e")
+    # primeiro morro: sobe em dois degraus e desce
+    L.ground(23, 30, 19); L.ground(31, 36, 17); L.coins(range(31, 37), 15); L.put(34, 16, "e")
+    L.ground(37, 42, 19)
+    # telhado sobre o buraco
+    L.plat(44, 46, 18); L.coins([44, 45, 46], 16)
+    L.ground(48, 62)
+    L.put(51, G - 1, "e"); L.put(56, G - 1, "T"); L.arc(55, G - 8)
+    L.plat(58, 61, 15); L.coins(range(58, 62), 14)
+    L.ground(63, 68, 19); L.put(66, 18, "e")
+    # vinhedo no alto do morro
+    L.ground(72, 78, 18); L.coins(range(73, 78), 16)
+    L.ground(79, 84, 16); L.put(82, 15, "e"); L.coins([80, 81, 83], 14)
+    L.ground(85, 111)
+    L.put(90, G - 1, "e"); L.plat(93, 97, 17); L.coins(range(93, 98), 16)
+    L.put(100, G - 1, "e"); L.coins(range(101, 104), G - 2)
+    L.put(106, G - 1, "F")
+    L.save("italia", "Italia")
+
+
 if __name__ == "__main__":
+    italia()
     quartel()
     escolinha()
     aquario()
