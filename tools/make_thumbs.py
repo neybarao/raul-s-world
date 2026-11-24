@@ -24,7 +24,7 @@ def ground_strip(tiles_png, width):
 
 
 def make(level, bg, tiles):
-    canvas = Image.new("RGBA", (384, 216), (90, 168, 232, 255))
+    canvas = Image.new("RGBA", (384, 216), (36, 26, 175, 255))
     if bg:
         img = Image.open(A / "bg" / f"{level}.png").convert("RGBA")
         img = img.crop((0, 0, 512, 341)).resize((384, 256), Image.NEAREST)

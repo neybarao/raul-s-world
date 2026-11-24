@@ -105,11 +105,14 @@ export default class GameScene extends Phaser.Scene {
     } else {
       // fases das fotos: panorama do Magnific, em dobro, repetindo sem emenda
       const src = this.textures.get(lv.bg).getSourceImage();
+      const bgTop = groundY + 40 * U - src.height * 2;
+      if (lv.skyTop) this.makeSky(lv, bgTop);
       this.add
         .tileSprite(-400 * U, groundY + 40 * U, this.levelW + 800 * U, src.height * 2, lv.bg)
         .setOrigin(0, 1)
         .setTileScale(2, 2)
         .setScrollFactor(0.3, 1);
+      if (!lv.indoor) this.makeSparkles(bgTop);
     }
     if (lv.water) {
       // agua no fundo dos buracos (cair nela continua custando um coracao)
@@ -119,6 +122,45 @@ export default class GameScene extends Phaser.Scene {
       this.waterTop = top;
     }
     if (lv.bubbles) this.makeBubbles();
+  }
+
+  // ceu de entardecer: degrade do indigo (alto) ate a cor do topo do panorama
+  makeSky(lv, bgTop) {
+    const key = `sky-${lv.id}`;
+    if (!this.textures.exists(key)) {
+      const tex = this.textures.createCanvas(key, 4, 64);
+      const ctx = tex.getContext();
+      const grad = ctx.createLinearGradient(0, 0, 0, 64);
+      grad.addColorStop(0, lv.skyTop);
+      grad.addColorStop(1, lv.sky);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 4, 64);
+      tex.refresh();
+    }
+    const top = -600 * U;
+    this.add.image(-400 * U, top, key).setOrigin(0, 0)
+      .setDisplaySize(this.levelW + 800 * U, bgTop - top + 2 * U);
+  }
+
+  // estrelinhas piscando no ceu (so enfeite, ficam atras de tudo que importa)
+  makeSparkles(bgTop) {
+    if (!this.textures.exists('sparkle')) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffffff, 1).fillRect(2, 0, 1, 5).fillRect(0, 2, 5, 1);
+      g.generateTexture('sparkle', 5, 5);
+      g.destroy();
+    }
+    const rnd = new Phaser.Math.RandomDataGenerator(['brilhos', this.level.id]);
+    const colors = [0xffffff, 0xff7ad9, 0x7af2ff, 0xffe27a];
+    const spanX = this.levelW * 0.15 + 1400 * U;
+    for (let i = 0; i < 46; i++) {
+      const st = this.add.image(rnd.between(-200 * U, spanX), rnd.between(bgTop - 260 * U, bgTop + 70 * U), 'sparkle')
+        .setScrollFactor(0.15, 1)
+        .setTint(rnd.pick(colors))
+        .setScale(U * rnd.pick([1, 1, 2]))
+        .setAlpha(0.2);
+      this.tweens.add({ targets: st, alpha: 1, duration: rnd.between(500, 1400), yoyo: true, repeat: -1, delay: rnd.between(0, 2000), ease: 'Sine.inOut' });
+    }
   }
 
   makeBubbles() {
@@ -402,7 +444,7 @@ export default class GameScene extends Phaser.Scene {
 
   drawWaves(time) {
     const cam = this.cameras.main;
-    const g = this.waves.clear().fillStyle(0xffffff, 0.55);
+    const g = this.waves.clear().fillStyle(0xbffcff, 0.7);
     const x0 = Math.floor(cam.worldView.x / (8 * U)) * 8 * U;
     for (let x = x0; x < cam.worldView.right + 16 * U; x += 8 * U) {
       const h = Math.round((Math.sin(x / 40 + time / 300) + 1) * 2) * U;

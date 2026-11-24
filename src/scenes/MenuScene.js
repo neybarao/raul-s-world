@@ -81,13 +81,23 @@ export default class MenuScene extends Phaser.Scene {
     const rows = Math.ceil(LEVELS.length / this.cols);
     const s = Math.max(2, Math.floor(Math.min(w, areaH) / 200));
 
-    // fundo: ceu com faixa de grama embaixo
-    this.bg.clear().fillStyle(0x5aa8e8, 1).fillRect(0, 0, w, areaH);
-    this.bg.fillStyle(0x4caf50, 1).fillRect(0, areaH - 10 * s, w, 10 * s);
-    this.bg.fillStyle(0x8a5a32, 1).fillRect(0, areaH - 6 * s, w, 6 * s);
+    // fundo: ceu de entardecer neon em faixas (pixel art) e chao com linha de luz
+    const bands = [0x120838, 0x1c0c52, 0x2a116e, 0x3d1688, 0x571a9a, 0x7a1fa3, 0x9e2aa6];
+    const bandH = Math.ceil((areaH - 10 * s) / bands.length);
+    this.bg.clear();
+    bands.forEach((c, i) => this.bg.fillStyle(c, 1).fillRect(0, i * bandH, w, bandH + 1));
+    const rnd = new Phaser.Math.RandomDataGenerator(['menu']);
+    for (let i = 0; i < 40; i++) {
+      this.bg.fillStyle(rnd.pick([0xffffff, 0xff7ad9, 0x7af2ff]), rnd.realInRange(0.4, 1))
+        .fillRect(Math.round(rnd.frac() * w), Math.round(rnd.frac() * (areaH - 20 * s)), s, s);
+    }
+    this.bg.fillStyle(0x2a1458, 1).fillRect(0, areaH - 10 * s, w, 10 * s);
+    this.bg.fillStyle(0xff4fd8, 1).fillRect(0, areaH - 10 * s, w, s);
+    this.bg.fillStyle(0x5cf2ff, 1).fillRect(0, areaH - 9 * s, w, s);
 
     const top = safeTop + 8 * s;
-    this.title.setFontSize(18 * s).setStroke('#1b1b2a', 3 * s).setPosition(w / 2, top + 10 * s);
+    this.title.setFontSize(18 * s).setStroke('#1b1b2a', 3 * s).setPosition(w / 2, top + 10 * s)
+      .setShadow(0, 2 * s, '#ff3d9a', 0, true, false);
     this.subtitle.setFontSize(7 * s).setStroke('#1b1b2a', 2 * s).setPosition(w / 2, top + 26 * s);
 
     // grade de cartoes
@@ -137,8 +147,10 @@ export default class MenuScene extends Phaser.Scene {
     this.cards.forEach((card, i) => {
       const on = i === this.selected;
       card.frame.clear()
-        .fillStyle(0x1b1b2a, 0.85).fillRoundedRect(0, 0, card.w, card.h, 3 * s)
-        .lineStyle(on ? 2 * s : s, on ? 0xffd23f : 0xffffff, on ? 1 : 0.5).strokeRoundedRect(0, 0, card.w, card.h, 3 * s);
+        .fillStyle(0x140a34, 0.88).fillRoundedRect(0, 0, card.w, card.h, 3 * s)
+        .lineStyle(on ? 2 * s : s, on ? 0x5cf2ff : 0xff7ad9, on ? 1 : 0.55).strokeRoundedRect(0, 0, card.w, card.h, 3 * s);
+      // cartao escolhido ganha um halo neon por fora
+      if (on) card.frame.lineStyle(s, 0x5cf2ff, 0.35).strokeRoundedRect(-2 * s, -2 * s, card.w + 4 * s, card.h + 4 * s, 4 * s);
       card.setScale(on ? 1.03 : 1);
     });
   }

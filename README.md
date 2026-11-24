@@ -26,6 +26,16 @@ cores das fotos de férias da família (só as paletas foram enviadas, não as f
 em `tools/build_levels.py`; a lista de fases e o visual de cada uma em `src/levels/index.js`.
 Legenda extra do mapa: `T` = mola. O recorde de moedas de cada fase fica guardado no aparelho.
 
+## Visual neon (branch `revamp-visual-neon`)
+Experimento de cores mais vivas e modernas, inspirado em artes de entardecer neon (roxo, magenta,
+ciano). Jogabilidade, fases e músicas são as mesmas da `main`; só muda a arte.
+- `tools/revamp_neon.py` regrada a arte atual sem redesenhar: fundos com saturação alta, sombras
+  roxas e céu de entardecer; sprites com cores vivas e contorno externo branco de 1 pixel; tiles com
+  uma linha neon no topo; moeda com halo dourado. Lê de `art/classic/` (cópia da arte antes do
+  revamp), então pode rodar de novo sem acumular. Depois rode `tools/make_thumbs.py`.
+- No jogo: céu em degradê (campos `sky`/`skyTop` em `src/levels/index.js`), estrelinhas piscando
+  nas fases ao ar livre (as marcadas `indoor` não têm) e menu com fundo de entardecer em faixas.
+
 ## Música
 Trilhas chiptune originais geradas no Magnific (Google Lyria 3), recortadas em compassos inteiros
 para repetir sem emenda (originais em `art/music/`, versões do jogo em `public/assets/music/`):

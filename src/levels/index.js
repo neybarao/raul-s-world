@@ -21,44 +21,46 @@ export const ENEMIES = {
   aviao: { key: 'enemy-aviao', frame: [32, 32], body: [24, 12, 4, 10], kind: 'floater', amp: [72, 12], faceRight: true },
 };
 
+// visual neon: sky e a cor do ceu logo acima do panorama, skyTop a do alto (degrade)
+// indoor: fase dentro de um lugar fechado, sem estrelinhas no ceu
 export const LEVELS = [
   {
     id: 'floresta', name: 'Floresta', map: floresta, enemy: 'besouro',
     music: 'musica-ar-livre',
-    sky: '#0379f7', tiles: 'tiles', mola: 'mola-floresta', bg: 'bg-floresta',
+    sky: '#241aaf', skyTop: '#120838', tiles: 'tiles', mola: 'mola-floresta', bg: 'bg-floresta',
   },
   {
     id: 'aquario', name: 'Aquário', map: aquario, enemy: 'aguaviva',
     music: 'musica-ar-livre',
-    sky: '#4fa8ad', tiles: 'tiles-aquario', mola: 'mola-aquario', bg: 'bg-aquario',
-    water: 0x2e7f8c, bubbles: true,
+    sky: '#5f82a4', skyTop: '#120838', tiles: 'tiles-aquario', mola: 'mola-aquario', bg: 'bg-aquario', indoor: true,
+    water: 0x1fa3c4, bubbles: true,
   },
   {
     id: 'bolinhas', name: 'Piscina de Bolinhas', map: bolinhas, enemy: 'bola',
     music: 'musica-ar-livre',
-    sky: '#777259', tiles: 'tiles-bolinhas', mola: 'mola-bolinhas', bg: 'bg-bolinhas',
+    sky: '#825476', skyTop: '#120838', tiles: 'tiles-bolinhas', mola: 'mola-bolinhas', bg: 'bg-bolinhas', indoor: true,
   },
   {
     id: 'parque', name: 'Parque Aquático', map: parque, enemy: 'patinho',
     music: 'musica-ar-livre',
-    sky: '#5e95d1', tiles: 'tiles-parque', mola: 'mola-parque', bg: 'bg-parque',
-    water: 0x6cc8e4,
+    sky: '#502dbb', skyTop: '#120838', tiles: 'tiles-parque', mola: 'mola-parque', bg: 'bg-parque',
+    water: 0x3ad6f0,
   },
   {
     id: 'praia', name: 'Praia', map: praia, enemy: 'caranguejo',
     music: 'musica-ar-livre',
-    sky: '#5089e5', tiles: 'tiles-praia', mola: 'mola-praia', bg: 'bg-praia',
-    water: 0x3aa8c0,
+    sky: '#2a11aa', skyTop: '#120838', tiles: 'tiles-praia', mola: 'mola-praia', bg: 'bg-praia',
+    water: 0x22b8d8,
   },
   {
     id: 'quartel', name: 'Quartel da Mamãe', map: quartel, enemy: 'capivara',
     music: 'musica-quartel',
-    sky: '#96b9bf', tiles: 'tiles-quartel', mola: 'mola-quartel', bg: 'bg-quartel',
+    sky: '#bb76b4', skyTop: '#120838', tiles: 'tiles-quartel', mola: 'mola-quartel', bg: 'bg-quartel',
   },
   {
     id: 'escolinha', name: 'Escolinha', map: escolinha, enemy: 'aviao',
     music: 'musica-ar-livre',
-    sky: '#978a66', tiles: 'tiles-escolinha', mola: 'mola-escolinha', bg: 'bg-escolinha',
+    sky: '#af667b', skyTop: '#120838', tiles: 'tiles-escolinha', mola: 'mola-escolinha', bg: 'bg-escolinha', indoor: true,
   },
 ];
 
