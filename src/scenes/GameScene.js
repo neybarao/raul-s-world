@@ -124,7 +124,7 @@ export default class GameScene extends Phaser.Scene {
     this.respawnPoint = { ...this.spawn };
 
     this.player = this.physics.add.sprite(this.spawn.x, this.spawn.y, 'raul', 0).setOrigin(0.5, 1);
-    this.player.body.setSize(10, 24).setOffset(8, 10);
+    this.player.body.setSize(10, 20).setOffset(5, 6);
     this.player.body.setMaxVelocityY(520);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);
@@ -167,6 +167,7 @@ export default class GameScene extends Phaser.Scene {
     const kb = this.input.keyboard;
     this.keys = kb.addKeys({
       left: 'LEFT', right: 'RIGHT', up: 'UP', a: 'A', d: 'D', w: 'W', space: 'SPACE', z: 'Z',
+      shift: 'SHIFT', x: 'X',
     });
   }
 
@@ -189,6 +190,7 @@ export default class GameScene extends Phaser.Scene {
       left: k.left.isDown || k.a.isDown || touch.left,
       right: k.right.isDown || k.d.isDown || touch.right,
       jump: k.up.isDown || k.w.isDown || k.space.isDown || k.z.isDown || touch.jump,
+      run: k.shift.isDown || k.x.isDown || touch.run,
     };
   }
 
@@ -209,7 +211,7 @@ export default class GameScene extends Phaser.Scene {
     const k = onGround ? PLAYER.accelGround : PLAYER.accelAir;
     const t = 1 - Math.pow(1 - k, dt);
     if (time > this.knockbackUntil) {
-      body.setVelocityX(Phaser.Math.Linear(body.velocity.x, dir * PLAYER.speed, t));
+      body.setVelocityX(Phaser.Math.Linear(body.velocity.x, dir * (input.run ? PLAYER.runSpeed : PLAYER.speed), t));
     }
 
     // pulo com tolerancia de borda (coyote) e de antecipacao (buffer)
@@ -226,9 +228,12 @@ export default class GameScene extends Phaser.Scene {
     this.prevJumpHeld = input.jump;
 
     p.setFlipX(this.facing < 0);
-    if (!onGround) p.play('raul-jump', true);
-    else if (Math.abs(body.velocity.x) > 12) p.play('raul-run', true);
-    else p.play('raul-idle', true);
+    if (time < this.knockbackUntil + 150) p.play('raul-hurt', true);
+    else if (!onGround) p.play(body.velocity.y < 0 ? 'raul-jump' : 'raul-fall', true);
+    else if (Math.abs(body.velocity.x) > 12) {
+      p.play('raul-run', true);
+      p.anims.timeScale = Math.abs(body.velocity.x) > PLAYER.speed + 10 ? 1.5 : 1;
+    } else p.play('raul-idle', true);
 
     // guarda o checkpoint mais adiantado ja alcancado
     for (const c of this.checkpoints) {
@@ -371,7 +376,7 @@ export default class GameScene extends Phaser.Scene {
     this.state = 'over';
     this.player.body.setVelocity(0, -260);
     this.player.body.checkCollision.none = true;
-    this.player.setTint(0xffaaaa);
+    this.player.play('raul-hurt');
     this.game.events.emit('game-over');
   }
 

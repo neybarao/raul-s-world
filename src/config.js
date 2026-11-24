@@ -2,7 +2,8 @@
 export const TILE = 16;
 
 export const PLAYER = {
-  speed: 115,
+  speed: 105,
+  runSpeed: 165, // segurando B (ou Shift/X no teclado)
   accelGround: 0.28,
   accelAir: 0.14,
   jumpVelocity: 335,

@@ -12,8 +12,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.on('progress', (p) => (bar.width = 160 * p));
 
     this.load.setPath('assets/');
-    this.load.spritesheet('raul', 'sprites/raul.png', { frameWidth: 26, frameHeight: 34 });
-    this.load.spritesheet('dog', 'sprites/dog.png', { frameWidth: 24, frameHeight: 20 });
+    this.load.spritesheet('raul', 'sprites/raul.png', { frameWidth: 20, frameHeight: 26 });
+    this.load.spritesheet('dog', 'sprites/dog.png', { frameWidth: 22, frameHeight: 16 });
     this.load.spritesheet('enemy', 'enemy.png', { frameWidth: 16, frameHeight: 14 });
     this.load.spritesheet('hearts', 'hearts.png', { frameWidth: 9, frameHeight: 8 });
     this.load.image('raul-face', 'sprites/raul-face.png');
@@ -27,13 +27,16 @@ export default class BootScene extends Phaser.Scene {
 
   create() {
     const a = this.anims;
-    a.create({ key: 'raul-idle', frames: [{ key: 'raul', frame: 0 }] });
-    a.create({ key: 'raul-run', frames: a.generateFrameNumbers('raul', { frames: [1, 2] }), frameRate: 8, repeat: -1 });
-    a.create({ key: 'raul-jump', frames: [{ key: 'raul', frame: 3 }] });
-    a.create({ key: 'dog-run', frames: a.generateFrameNumbers('dog', { frames: [0, 1] }), frameRate: 8, repeat: -1 });
-    a.create({ key: 'dog-stand', frames: [{ key: 'dog', frame: 0 }] });
-    a.create({ key: 'dog-sit', frames: [{ key: 'dog', frame: 2 }] });
-    a.create({ key: 'dog-sleep', frames: [{ key: 'dog', frame: 3 }] });
+    const f = (key, frames) => frames.map((frame) => ({ key, frame }));
+    a.create({ key: 'raul-idle', frames: f('raul', [0, 0, 0, 0, 0, 0, 0, 1]), frameRate: 4, repeat: -1 });
+    a.create({ key: 'raul-run', frames: f('raul', [2, 3, 4, 5]), frameRate: 10, repeat: -1 });
+    a.create({ key: 'raul-jump', frames: f('raul', [6]) });
+    a.create({ key: 'raul-fall', frames: f('raul', [7]) });
+    a.create({ key: 'raul-hurt', frames: f('raul', [8]) });
+    a.create({ key: 'dog-run', frames: f('dog', [0, 1]), frameRate: 9, repeat: -1 });
+    a.create({ key: 'dog-stand', frames: f('dog', [2]) });
+    a.create({ key: 'dog-sit', frames: f('dog', [3]) });
+    a.create({ key: 'dog-sleep', frames: f('dog', [4]) });
     a.create({ key: 'enemy-walk', frames: a.generateFrameNumbers('enemy', { frames: [0, 1] }), frameRate: 5, repeat: -1 });
 
     this.registry.set('tile', TILE);

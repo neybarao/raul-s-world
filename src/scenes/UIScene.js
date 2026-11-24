@@ -23,6 +23,9 @@ export default class UIScene extends Phaser.Scene {
     this.pauseBtn = this.add.graphics();
     this.pauseZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
     this.pauseZone.on('pointerdown', () => this.togglePause());
+    this.labels = [0, 1, 2].map(() => this.add.text(0, 0, '', FONT).setOrigin(0.5).setVisible(false));
+    this.startZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
+    this.startZone.on('pointerdown', () => this.togglePause());
 
     const ev = this.game.events;
     const onHud = (h) => { this.hud = h; this.drawHud(); };
@@ -88,22 +91,29 @@ export default class UIScene extends Phaser.Scene {
 
   // ---------- controles de toque ----------
 
+  // Controles no estilo dos portateis antigos: direcional em cruz, A (pular), B (correr), START (pausa).
   defineButtons() {
     const { width: w, height: h, portrait, hasTouch, controlsHeight: ch } = layout;
+    this.pad = null;
     this.btns = [];
+    this.start = null;
     if (!hasTouch) return;
     if (portrait) {
-      const cy = h - ch / 2;
-      const r = Math.min(ch * 0.3, w * 0.12);
-      this.btns.push({ id: 'left', x: w * 0.16, y: cy, r });
-      this.btns.push({ id: 'right', x: w * 0.44, y: cy, r });
-      this.btns.push({ id: 'jump', x: w * 0.80, y: cy, r: r * 1.25 });
+      const top = h - ch;
+      const cy = top + ch * 0.46;
+      const size = Math.min(ch * 0.3, w * 0.15); // meio comprimento de cada braco da cruz
+      const r = Math.min(ch * 0.15, w * 0.085);
+      this.pad = { x: w * 0.25, y: cy, size };
+      this.btns.push({ id: 'run', label: 'B', x: w * 0.67, y: cy + r * 0.55, r });
+      this.btns.push({ id: 'jump', label: 'A', x: w * 0.86, y: cy - r * 0.55, r });
+      this.start = { x: w * 0.5, y: top + ch * 0.86, w: Math.min(w * 0.16, 70), h: Math.max(10, ch * 0.055) };
     } else {
-      const r = Math.min(h * 0.11, 70);
-      const cy = h - r * 1.5;
-      this.btns.push({ id: 'left', x: r * 1.6, y: cy, r });
-      this.btns.push({ id: 'right', x: r * 4.1, y: cy, r });
-      this.btns.push({ id: 'jump', x: w - r * 1.9, y: cy, r: r * 1.25 });
+      const size = Math.min(h * 0.13, 80);
+      const r = Math.min(h * 0.075, 46);
+      const cy = h - size * 1.45;
+      this.pad = { x: size * 1.5, y: cy, size };
+      this.btns.push({ id: 'run', label: 'B', x: w - r * 4.6, y: cy + r * 0.6, r });
+      this.btns.push({ id: 'jump', label: 'A', x: w - r * 1.8, y: cy - r * 0.6, r });
     }
   }
 
@@ -112,41 +122,99 @@ export default class UIScene extends Phaser.Scene {
     const { width: w, height: h, portrait, controlsHeight: ch } = layout;
     this.panel.clear();
     g.clear();
-    if (!this.btns.length) return;
+    this.labels.forEach((t) => t.setVisible(false));
+    this.startZone.setVisible(false);
+    if (this.startZone.input) this.startZone.input.enabled = false;
+    if (!this.pad) return;
+    const solid = portrait;
+    const a = solid ? 1 : 0.4;
+
     if (portrait) {
-      this.panel.fillStyle(0x23233a, 1).fillRect(0, h - ch, w, ch);
-      this.panel.fillStyle(0x3a3a5c, 1).fillRect(0, h - ch, w, 3);
+      // corpo do console
+      const top = h - ch;
+      this.panel.fillStyle(0x16162a, 1).fillRect(0, top, w, 6);
+      this.panel.fillStyle(0xcfcabd, 1).fillRect(0, top + 6, w, ch - 6);
+      this.panel.fillStyle(0xe2ddd1, 1).fillRect(0, top + 6, w, 3);
+      // grade do alto-falante
+      for (let i = 0; i < 5; i++) {
+        const x = w - 24 - i * 9;
+        this.panel.fillStyle(0xa9a394, 1).fillRoundedRect(x, h - ch * 0.22, 4, ch * 0.16, 2);
+      }
     }
-    const alpha = portrait ? 1 : 0.45;
+
+    // direcional em cruz
+    const { x, y, size } = this.pad;
+    const arm = size * 0.66;
+    const shadow = Math.max(2, size * 0.06);
+    g.fillStyle(0x000000, solid ? 0.25 : 0.15)
+      .fillRoundedRect(x - size + shadow, y - arm / 2 + shadow, size * 2, arm, 4)
+      .fillRoundedRect(x - arm / 2 + shadow, y - size + shadow, arm, size * 2, 4);
+    g.fillStyle(0x2b2b30, a)
+      .fillRoundedRect(x - size, y - arm / 2, size * 2, arm, 4)
+      .fillRoundedRect(x - arm / 2, y - size, arm, size * 2, 4);
+    const lit = 0x55555e;
+    if (touch.left) g.fillStyle(lit, a).fillRoundedRect(x - size, y - arm / 2, size - arm / 2, arm, 4);
+    if (touch.right) g.fillStyle(lit, a).fillRoundedRect(x + arm / 2, y - arm / 2, size - arm / 2, arm, 4);
+    g.fillStyle(0x1e1e22, a).fillCircle(x, y, arm * 0.28);
+    const t = arm * 0.22;
+    const tri = 0x6b6b74;
+    g.fillStyle(tri, a)
+      .fillTriangle(x - size + t * 0.9, y, x - size + t * 2.3, y - t, x - size + t * 2.3, y + t)
+      .fillTriangle(x + size - t * 0.9, y, x + size - t * 2.3, y - t, x + size - t * 2.3, y + t)
+      .fillTriangle(x, y - size + t * 0.9, x - t, y - size + t * 2.3, x + t, y - size + t * 2.3)
+      .fillTriangle(x, y + size - t * 0.9, x - t, y + size - t * 2.3, x + t, y + size - t * 2.3);
+
+    // botoes A e B
+    let li = 0;
     for (const b of this.btns) {
       const on = touch[b.id];
-      g.fillStyle(on ? 0xffd23f : b.id === 'jump' ? 0xe8463a : 0x4a4a74, alpha).fillCircle(b.x, b.y, b.r);
-      g.lineStyle(3, 0x11111c, alpha).strokeCircle(b.x, b.y, b.r);
-      g.fillStyle(0xffffff, portrait ? 1 : 0.8);
-      const a = b.r * 0.38;
-      if (b.id === 'left') g.fillTriangle(b.x - a, b.y, b.x + a * 0.7, b.y - a, b.x + a * 0.7, b.y + a);
-      if (b.id === 'right') g.fillTriangle(b.x + a, b.y, b.x - a * 0.7, b.y - a, b.x - a * 0.7, b.y + a);
-      if (b.id === 'jump') g.fillTriangle(b.x, b.y - a, b.x - a, b.y + a * 0.6, b.x + a, b.y + a * 0.6);
+      if (portrait) g.fillStyle(0xb9b3a5, 1).fillCircle(b.x, b.y, b.r * 1.18);
+      g.fillStyle(0x000000, solid ? 0.3 : 0.15).fillCircle(b.x + shadow, b.y + shadow, b.r);
+      g.fillStyle(on ? 0xd9407f : 0xa3195b, a).fillCircle(b.x, b.y, b.r);
+      g.fillStyle(0xffffff, on ? 0.1 : 0.22 * a).fillCircle(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.35);
+      const lbl = this.labels[li++];
+      lbl.setText(b.label).setFontSize(Math.round(b.r * 0.62)).setVisible(true).setAlpha(solid ? 1 : 0.6)
+        .setPosition(b.x + (portrait ? b.r * 0.9 : 0), b.y + (portrait ? b.r * 1.15 : 0))
+        .setColor(portrait ? '#2b2a6b' : '#ffffff').setStroke(portrait ? '#cfcabd' : '#1b1b2a', portrait ? 0 : 3);
+    }
+
+    // START (pausa)
+    if (this.start) {
+      const st = this.start;
+      g.fillStyle(0x8f8a7e, 1).fillRoundedRect(st.x - st.w / 2, st.y - st.h / 2, st.w, st.h, st.h / 2);
+      const lbl = this.labels[li++];
+      lbl.setText('START').setFontSize(Math.round(Math.max(9, st.h * 0.95))).setVisible(true).setAlpha(1)
+        .setPosition(st.x, st.y + st.h * 1.3).setColor('#2b2a6b').setStroke('#cfcabd', 0);
+      this.startZone.setVisible(true).setPosition(st.x - st.w / 2 - 10, st.y - st.h / 2 - 12).setSize(st.w + 20, st.h + 30);
+      this.startZone.input.hitArea.setSize(st.w + 20, st.h + 30);
+      this.startZone.input.enabled = true;
     }
   }
 
   update() {
-    if (!this.btns || !this.btns.length) return;
+    if (!this.pad) return;
     const prev = { ...touch };
-    touch.left = touch.right = touch.jump = false;
-    // le todos os dedos na tela, assim da pra correr e pular ao mesmo tempo
+    touch.left = touch.right = touch.jump = touch.run = false;
+    // le todos os dedos na tela, assim da pra andar, correr e pular ao mesmo tempo
     for (const p of this.input.manager.pointers) {
       if (!p.isDown || p.wasTouch === false) continue;
-      // cada dedo aciona so o botao mais proximo, com area de toque maior que o desenho
+      const { x, y, size } = this.pad;
+      const dx = p.x - x;
+      const dy = p.y - y;
+      if (Math.hypot(dx, dy) <= size * 1.5) {
+        // o direcional so precisa de esquerda e direita; diagonais tambem valem
+        if (Math.abs(dx) > size * 0.15) touch[dx < 0 ? 'left' : 'right'] = true;
+        continue;
+      }
       let best = null;
       let bestD = Infinity;
       for (const b of this.btns) {
         const d = Phaser.Math.Distance.Between(p.x, p.y, b.x, b.y);
-        if (d <= b.r * 1.5 && d < bestD) { best = b; bestD = d; }
+        if (d <= b.r * 1.6 && d < bestD) { best = b; bestD = d; }
       }
       if (best) touch[best.id] = true;
     }
-    if (prev.left !== touch.left || prev.right !== touch.right || prev.jump !== touch.jump) this.drawControls();
+    if (['left', 'right', 'jump', 'run'].some((k) => prev[k] !== touch[k])) this.drawControls();
   }
 
   // ---------- pausa e telas de mensagem ----------

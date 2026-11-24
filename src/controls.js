@@ -1,6 +1,6 @@
 // Estado de entrada compartilhado entre a cena do jogo e a cena da interface.
 // A UIScene escreve (toque), a GameScene le e combina com o teclado.
-export const touch = { left: false, right: false, jump: false };
+export const touch = { left: false, right: false, jump: false, run: false };
 
 // Layout calculado no resize e compartilhado entre as cenas.
 export const layout = {
@@ -19,6 +19,6 @@ export function computeLayout(game) {
   layout.height = height;
   layout.portrait = portrait;
   layout.hasTouch = hasTouch;
-  layout.controlsHeight = portrait && hasTouch ? Math.round(Math.min(height * 0.28, 240)) : 0;
+  layout.controlsHeight = portrait && hasTouch ? Math.round(Math.min(height * 0.32, 280)) : 0;
   return layout;
 }

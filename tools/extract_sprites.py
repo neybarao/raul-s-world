@@ -1,7 +1,8 @@
 """Recorta sprites placeholder do character sheet conceitual.
 
 Uso: python3 tools/extract_sprites.py
-Gera PNGs com fundo transparente em public/assets/sprites/.
+Gera PNGs com fundo transparente em public/assets/sprites/ (rosto do HUD, moeda e bandeira).
+O Raul e o cachorro agora sao desenhados pixel a pixel em tools/pixel_sprites.py.
 Esses sprites sao provisorios: a arte final deve ser desenhada em grade de pixels real.
 """
 from collections import deque
@@ -106,13 +107,6 @@ def downscale(img, target_h):
     return small
 
 
-# spritesheets com quadros de tamanho igual, alinhados pelo pe e centralizados
-SHEETS = {
-    "raul": (["raul-idle", "raul-run1", "raul-run2", "raul-jump"], 26, 34),
-    "dog": (["dog-walk", "dog-run", "dog-sit", "dog-sleep"], 24, 20),
-}
-
-
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     sheet = Image.open(SHEET)
@@ -123,13 +117,6 @@ def main():
         if name in ("raul-face", "coin", "flag"):
             sprite.save(OUT / f"{name}.png")
         print(name, sprite.size)
-    for sheet_name, (names, fw, fh) in SHEETS.items():
-        out = Image.new("RGBA", (fw * len(names), fh), (0, 0, 0, 0))
-        for i, n in enumerate(names):
-            f = frames[n]
-            out.alpha_composite(f, (i * fw + (fw - f.width) // 2, fh - f.height))
-        out.save(OUT / f"{sheet_name}.png")
-        print(sheet_name, out.size)
 
 
 if __name__ == "__main__":
