@@ -15,7 +15,7 @@ Antes de jogar aparece o seletor de fases (toque no cartão duas vezes, ou direc
 | Piscina de Bolinhas | bolinhas bravas quicando e muitas molas |
 | Parque Aquático | piscinas largas: boias e plataformas flutuantes |
 | Praia | caranguejos e píer de madeira sobre o mar |
-| Quartel da Mamãe | tatus no gramado, caixotes em escada e pneus de mola |
+| Quartel da Mamãe | capivaras no gramado, caixotes em escada e pneus de mola |
 | Escolinha | aviõezinhos de papel voando pela sala e pilhas de livros |
 
 Os fundos das fases novas foram gerados no Magnific (GPT 2.6) em pixel art 32 bits, usando as

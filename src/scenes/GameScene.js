@@ -316,7 +316,8 @@ export default class GameScene extends Phaser.Scene {
       if (e.kind === 'floater') {
         const [ax, ay] = this.enemyDef.amp || [28, 26];
         e.setPosition(e.baseX + Math.sin(t / 1600 + e.phase) * ax * U, e.baseY + Math.sin(t / 650 + e.phase) * ay * U);
-        e.setFlipX(Math.cos(t / 1600 + e.phase) > 0);
+        const movingRight = Math.cos(t / 1600 + e.phase) > 0;
+        e.setFlipX(this.enemyDef.faceRight ? !movingRight : movingRight);
         return;
       }
       if (b.blocked.left) e.dir = 1;
@@ -334,7 +335,8 @@ export default class GameScene extends Phaser.Scene {
         this.time.delayedCall(90, () => e.active && !e.dead && e.play(`${this.enemyDef.key}-walk`, true));
       }
       e.setVelocityX(e.dir * ENEMY.speed * (e.kind === 'bouncer' ? 1.3 : 1));
-      e.setFlipX(e.dir > 0);
+      // espelha o desenho para olhar para onde anda
+      e.setFlipX(this.enemyDef.faceRight ? e.dir < 0 : e.dir > 0);
     });
   }
 

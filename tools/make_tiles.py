@@ -611,34 +611,37 @@ def make_theme_enemies():
     d.ellipse([x0 + 4, 23, x0 + 28, 30], fill=yl)
     img.save(OUT / "enemy-patinho.png")
 
-    # tatu (quartel)
+    # capivara (quartel), olhando para a direita
     img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    sh, shh, shd, skin = (150, 126, 100), (196, 174, 146), (100, 80, 62), (214, 170, 140)
+    fur, furh, furd, nose = (150, 102, 62), (190, 140, 92), (104, 68, 40), (70, 48, 34)
     for f in range(2):
         x0, bob = f * W, f
-        for i, lx in enumerate((8, 22)):
-            off = 2 if (i + f) % 2 else -2
-            d.line([x0 + lx, 25, x0 + lx + off, 30], fill=OUTLINE, width=3)
-        d.pieslice([x0 + 3, 9 + bob, x0 + 27, 33 + bob], 180, 360, fill=OUTLINE)
-        d.pieslice([x0 + 4, 10 + bob, x0 + 26, 32 + bob], 180, 360, fill=sh)
-        for bx in range(8, 25, 4):  # faixas da carapaca
-            d.line([x0 + bx, 11 + bob, x0 + bx, 20 + bob], fill=shd)
-            d.point((x0 + bx - 1, 12 + bob), fill=shh)
-        d.rectangle([x0 + 4, 21 + bob, x0 + 26, 25], fill=OUTLINE)
-        d.rectangle([x0 + 5, 21 + bob, x0 + 25, 24], fill=shd)
-        d.ellipse([x0 + 22, 15 + bob, x0 + 31, 24 + bob], fill=OUTLINE)  # cabeca
-        d.ellipse([x0 + 23, 16 + bob, x0 + 30, 23 + bob], fill=skin)
-        d.polygon([(x0 + 24, 16 + bob), (x0 + 25, 11 + bob), (x0 + 27, 16 + bob)], fill=skin, outline=OUTLINE)  # orelha
-        d.point((x0 + 28, 18 + bob), fill=OUTLINE)
-        d.point((x0 + 31, 21 + bob), fill=OUTLINE)
-        d.line([x0 + 4, 21 + bob, x0 + 0, 24], fill=OUTLINE, width=2)  # rabinho
-    x0 = W * 2  # enrolado como bolinha (pisado)
-    d.ellipse([x0 + 7, 15, x0 + 25, 31], fill=OUTLINE)
-    d.ellipse([x0 + 8, 16, x0 + 24, 30], fill=sh)
-    for bx in range(11, 23, 3):
-        d.line([x0 + bx, 17, x0 + bx, 29], fill=shd)
-    img.save(OUT / "enemy-tatu.png")
+        # patinhas
+        for i, lx in enumerate((7, 12, 19, 24)):
+            off = 1 if (i + f) % 2 else -1
+            d.line([x0 + lx, 24, x0 + lx + off, 30], fill=OUTLINE, width=3)
+            d.point((x0 + lx + off, 30), fill=furd)
+        # corpo de barril
+        d.rounded_rectangle([x0 + 2, 11 + bob, x0 + 27, 27], radius=8, fill=OUTLINE)
+        d.rounded_rectangle([x0 + 3, 12 + bob, x0 + 26, 26], radius=7, fill=fur)
+        d.rounded_rectangle([x0 + 5, 13 + bob, x0 + 20, 17 + bob], radius=3, fill=furh)
+        d.line([x0 + 4, 25, x0 + 25, 25], fill=furd)
+        # cabecao quadrado com focinho
+        d.rounded_rectangle([x0 + 18, 7 + bob, x0 + 31, 21 + bob], radius=4, fill=OUTLINE)
+        d.rounded_rectangle([x0 + 19, 8 + bob, x0 + 30, 20 + bob], radius=3, fill=fur)
+        d.rectangle([x0 + 27, 13 + bob, x0 + 30, 19 + bob], fill=nose)
+        d.point((x0 + 29, 14 + bob), fill=(20, 14, 10))
+        d.rectangle([x0 + 23, 11 + bob, x0 + 24, 12 + bob], fill=OUTLINE)  # olho
+        d.point((x0 + 24, 11 + bob), fill=(255, 255, 255))
+        d.rectangle([x0 + 20, 5 + bob, x0 + 22, 8 + bob], fill=OUTLINE)  # orelhinha
+        d.point((x0 + 21, 6 + bob), fill=furh)
+        d.line([x0 + 26, 18 + bob, x0 + 28, 18 + bob], fill=furd)  # sorriso
+    x0 = W * 2  # amassada
+    d.rounded_rectangle([x0 + 2, 22, x0 + 30, 31], radius=4, fill=OUTLINE)
+    d.rounded_rectangle([x0 + 3, 23, x0 + 29, 30], radius=3, fill=fur)
+    d.rectangle([x0 + 25, 25, x0 + 28, 28], fill=nose)
+    img.save(OUT / "enemy-capivara.png")
 
     # aviaozinho de papel (escolinha): voa, nao anda
     img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))

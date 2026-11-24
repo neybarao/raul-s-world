@@ -7,6 +7,7 @@ import praia from './praia.js';
 import quartel from './quartel.js';
 import escolinha from './escolinha.js';
 
+// faceRight: o desenho olha para a direita (os outros olham para a esquerda ou sao simetricos)
 // tipos de inimigo:
 //  walker  anda e vira na borda          floater  flutua subindo e descendo (nao cai)
 //  bouncer quica pelo chao
@@ -14,10 +15,10 @@ export const ENEMIES = {
   besouro: { key: 'enemy', frame: [32, 28], body: [28, 22, 2, 6], kind: 'walker' },
   aguaviva: { key: 'enemy-aguaviva', frame: [32, 32], body: [22, 20, 5, 4], kind: 'floater', amp: [28, 26] },
   bola: { key: 'enemy-bola', frame: [32, 32], body: [22, 22, 5, 9], kind: 'bouncer' },
-  patinho: { key: 'enemy-patinho', frame: [32, 32], body: [24, 24, 4, 7], kind: 'walker' },
+  patinho: { key: 'enemy-patinho', frame: [32, 32], body: [24, 24, 4, 7], kind: 'walker', faceRight: true },
   caranguejo: { key: 'enemy-caranguejo', frame: [32, 32], body: [24, 16, 4, 15], kind: 'walker' },
-  tatu: { key: 'enemy-tatu', frame: [32, 32], body: [24, 16, 4, 14], kind: 'walker' },
-  aviao: { key: 'enemy-aviao', frame: [32, 32], body: [24, 12, 4, 10], kind: 'floater', amp: [72, 12] },
+  capivara: { key: 'enemy-capivara', frame: [32, 32], body: [26, 18, 3, 12], kind: 'walker', faceRight: true },
+  aviao: { key: 'enemy-aviao', frame: [32, 32], body: [24, 12, 4, 10], kind: 'floater', amp: [72, 12], faceRight: true },
 };
 
 export const LEVELS = [
@@ -45,7 +46,7 @@ export const LEVELS = [
     water: 0x3aa8c0,
   },
   {
-    id: 'quartel', name: 'Quartel da Mamãe', map: quartel, enemy: 'tatu',
+    id: 'quartel', name: 'Quartel da Mamãe', map: quartel, enemy: 'capivara',
     sky: '#96b9bf', tiles: 'tiles-quartel', mola: 'mola-quartel', bg: 'bg-quartel',
   },
   {
