@@ -3,6 +3,7 @@ import BootScene from './scenes/BootScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
 import { GRAVITY } from './config.js';
+import { setupPWA, setupFullscreen } from './pwa.js';
 
 // O canvas usa a resolucao real da tela (pixels fisicos) e o CSS reduz para o tamanho visual.
 // Assim o zoom da camera pode ser um numero inteiro de pixels fisicos e cada pixel da arte
@@ -41,5 +42,9 @@ game.events.once('ready', fit);
 window.addEventListener('resize', fit);
 window.addEventListener('orientationchange', () => setTimeout(fit, 200));
 
+setupPWA();
+setupFullscreen();
+
 // facilita testes no console do navegador
 window.__game = game;
+window.__build = __BUILD_ID__;

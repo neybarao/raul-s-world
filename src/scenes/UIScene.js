@@ -69,29 +69,30 @@ export default class UIScene extends Phaser.Scene {
     if (!this.face) return;
     const s = this.s;
     const m = 6 * s;
+    const top0 = layout.safeTop;
     // a arte do HUD tem o dobro de resolucao (escala 32 bits), por isso metade da escala
     const hs = s / 2;
-    this.face.setScale(hs).setPosition(m, m);
+    this.face.setScale(hs).setPosition(m, m + top0);
     const fw = this.face.displayWidth;
     const fh = this.face.displayHeight;
-    this.faceFrame.clear().lineStyle(s, 0xffffff, 1).strokeRect(m - s, m - s, fw + 2 * s, fh + 2 * s);
+    this.faceFrame.clear().lineStyle(s, 0xffffff, 1).strokeRect(m - s, m - s + top0, fw + 2 * s, fh + 2 * s);
 
     while (this.heartImgs.length < this.hud.max) this.heartImgs.push(this.add.image(0, 0, 'hearts', 0).setOrigin(0, 0));
     this.heartImgs.forEach((h, i) => {
-      h.setScale(hs).setPosition(m + fw + 4 * s + i * 10 * s, m + 2 * s).setFrame(i < this.hud.hearts ? 0 : 1);
+      h.setScale(hs).setPosition(m + fw + 4 * s + i * 10 * s, m + 2 * s + top0).setFrame(i < this.hud.hearts ? 0 : 1);
     });
 
     const right = layout.width - m;
     const pb = 14 * s;
     this.pauseBtn.clear()
-      .fillStyle(0x1b1b2a, 0.75).fillRoundedRect(right - pb, m, pb, pb, 3 * s)
-      .fillStyle(0xffffff, 1).fillRect(right - pb + 4 * s, m + 3 * s, 2 * s, 8 * s).fillRect(right - pb + 8 * s, m + 3 * s, 2 * s, 8 * s);
+      .fillStyle(0x1b1b2a, 0.75).fillRoundedRect(right - pb, m + top0, pb, pb, 3 * s)
+      .fillStyle(0xffffff, 1).fillRect(right - pb + 4 * s, m + top0 + 3 * s, 2 * s, 8 * s).fillRect(right - pb + 8 * s, m + top0 + 3 * s, 2 * s, 8 * s);
     const pad = 8 * layout.dpr;
-    this.pauseZone.setPosition(right - pb - pad, m - pad).setSize(pb + 2 * pad, pb + 2 * pad);
+    this.pauseZone.setPosition(right - pb - pad, m + top0 - pad).setSize(pb + 2 * pad, pb + 2 * pad);
     if (this.pauseZone.input) this.pauseZone.input.hitArea.setSize(pb + 2 * pad, pb + 2 * pad);
 
-    this.coinIcon.setScale(s * 0.4).setPosition(right - pb - 60 * s, m + pb / 2);
-    this.coinText.setFontSize(9 * s).setStroke('#1b1b2a', s * 1.5).setPosition(right - pb - 50 * s, m + pb / 2).setText(`x ${this.hud.coins}`);
+    this.coinIcon.setScale(s * 0.4).setPosition(right - pb - 60 * s, m + top0 + pb / 2);
+    this.coinText.setFontSize(9 * s).setStroke('#1b1b2a', s * 1.5).setPosition(right - pb - 50 * s, m + top0 + pb / 2).setText(`x ${this.hud.coins}`);
   }
 
   // ---------- controles de toque ----------
@@ -105,13 +106,14 @@ export default class UIScene extends Phaser.Scene {
     if (!hasTouch) return;
     if (portrait) {
       const top = h - ch;
-      const cy = top + ch * 0.46;
+      const usable = ch - layout.safeBottom;
+      const cy = top + usable * 0.46;
       const size = Math.min(ch * 0.3, w * 0.15); // meio comprimento de cada braco da cruz
       const r = Math.min(ch * 0.15, w * 0.085);
       this.pad = { x: w * 0.25, y: cy, size };
       this.btns.push({ id: 'run', label: 'B', x: w * 0.67, y: cy + r * 0.55, r });
       this.btns.push({ id: 'jump', label: 'A', x: w * 0.86, y: cy - r * 0.55, r });
-      this.start = { x: w * 0.5, y: top + ch * 0.86, w: Math.min(w * 0.16, 70 * layout.dpr), h: Math.max(10 * layout.dpr, ch * 0.055) };
+      this.start = { x: w * 0.5, y: top + usable * 0.86, w: Math.min(w * 0.16, 70 * layout.dpr), h: Math.max(10 * layout.dpr, ch * 0.055) };
     } else {
       const size = Math.min(h * 0.13, 80 * layout.dpr);
       const r = Math.min(h * 0.075, 46 * layout.dpr);
@@ -144,7 +146,7 @@ export default class UIScene extends Phaser.Scene {
       // grade do alto-falante
       for (let i = 0; i < 5; i++) {
         const x = w - (24 + i * 9) * u;
-        this.panel.fillStyle(0xa9a394, 1).fillRoundedRect(x, h - ch * 0.22, 4 * u, ch * 0.16, 2 * u);
+        this.panel.fillStyle(0xa9a394, 1).fillRoundedRect(x, h - layout.safeBottom - ch * 0.22, 4 * u, ch * 0.16, 2 * u);
       }
     }
 

@@ -1,0 +1,20 @@
+{
+  "name": "Raul's World",
+  "short_name": "Raul's World",
+  "description": "As aventuras do Raul e do seu cachorro em um jogo de plataforma em pixel art.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#1b1b2a",
+  "theme_color": "#1b1b2a",
+  "lang": "pt-BR",
+  "categories": ["games", "kids"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

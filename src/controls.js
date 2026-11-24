@@ -10,7 +10,14 @@ export const layout = {
   hasTouch: false,
   controlsHeight: 0, // faixa de botoes embaixo no modo em pe
   dpr: 1, // pixels fisicos por pixel CSS (todas as medidas acima estao em pixels fisicos)
+  safeTop: 0, // area do entalhe / ilha dinamica no iPhone
+  safeBottom: 0, // barra de gestos embaixo
 };
+
+function safeArea(name) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+  return parseFloat(v) || 0;
+}
 
 export function computeLayout(game) {
   const { width, height } = game.scale.gameSize;
@@ -22,6 +29,8 @@ export function computeLayout(game) {
   layout.height = height;
   layout.portrait = portrait;
   layout.hasTouch = hasTouch;
-  layout.controlsHeight = portrait && hasTouch ? Math.round(Math.min(height * 0.32, 280 * dpr)) : 0;
+  layout.safeTop = Math.round(safeArea('--sat') * dpr);
+  layout.safeBottom = Math.round(safeArea('--sab') * dpr);
+  layout.controlsHeight = portrait && hasTouch ? Math.round(Math.min(height * 0.32, 280 * dpr)) + layout.safeBottom : 0;
   return layout;
 }

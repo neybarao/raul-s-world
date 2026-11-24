@@ -9,6 +9,16 @@ Jogar: https://neybarao.github.io/raul-s-world/
 - Computador: setas ou A/D para andar, Espaço/W/↑ para pular, Shift ou X para correr, P ou Esc para pausar
 - Celular: direcional em cruz para andar, A para pular, B (segurar) para correr, START para pausar
 
+## App (PWA)
+- **Android (Chrome):** menu ⋮ → "Instalar app" ou "Adicionar à tela inicial". Abre em tela cheia.
+- **iPhone (Safari):** compartilhar → "Adicionar à Tela de Início". Abre sem barras do navegador
+  (o iOS não permite tela cheia total; a área do relógio fica por cima do céu do jogo).
+- **Atualizações:** cada publicação gera um `version.json` e um `sw.js` novos. O jogo confere a
+  versão ao abrir, ao voltar para o app e a cada 5 minutos; se houver versão nova, mostra
+  "Nova versão! Atualizando…" e recarrega sozinho.
+- Ícones em `public/icons/`, gerados no Magnific com o modelo GPT 2.6 a partir do character sheet
+  (original em `art/icon/icon-source.png`).
+
 ## Desenvolvimento
 ```bash
 npm install
