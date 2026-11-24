@@ -9,7 +9,8 @@ Jogar: https://neybarao.github.io/raul-s-world/
 No fim de cada fase o Raul corre para o colo da mamãe (agachada de braços abertos), que o pega,
 gira e abraça. A mamãe foi desenhada no Magnific a partir de uma descrição.
 
-Antes de jogar aparece o seletor de fases (toque no cartão duas vezes, ou direcional + A, ou setas + Enter):
+Antes de jogar aparece o seletor de fases (toque no cartão duas vezes, ou direcional + A, ou setas + Enter).
+No celular em pé as fases aparecem em lista (miniatura e nome grande); deitado, em grade de 4:
 
 | Fase | Desafio |
 |---|---|
