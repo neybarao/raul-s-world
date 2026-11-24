@@ -314,7 +314,8 @@ export default class GameScene extends Phaser.Scene {
       if (!e.active || e.dead) return;
       const b = e.body;
       if (e.kind === 'floater') {
-        e.setPosition(e.baseX + Math.sin(t / 1600 + e.phase) * 28 * U, e.baseY + Math.sin(t / 650 + e.phase) * 26 * U);
+        const [ax, ay] = this.enemyDef.amp || [28, 26];
+        e.setPosition(e.baseX + Math.sin(t / 1600 + e.phase) * ax * U, e.baseY + Math.sin(t / 650 + e.phase) * ay * U);
         e.setFlipX(Math.cos(t / 1600 + e.phase) > 0);
         return;
       }

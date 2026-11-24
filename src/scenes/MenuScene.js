@@ -75,7 +75,7 @@ export default class MenuScene extends Phaser.Scene {
     const { width: w, height: h, portrait, controlsHeight: ch, safeTop, dpr } = layout;
     const areaH = h - ch;
     this.cameras.main.setViewport(0, 0, w, areaH).setSize(w, areaH);
-    this.cols = portrait ? 2 : 3;
+    this.cols = portrait ? 2 : 4;
     const rows = Math.ceil(LEVELS.length / this.cols);
     const s = Math.max(2, Math.floor(Math.min(w, areaH) / 200));
 

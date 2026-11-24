@@ -258,6 +258,16 @@ THEMES = {
         "body": "grid", "body_cols": [(40, 110, 150), (70, 160, 200), (120, 200, 228), (170, 226, 242), (230, 248, 255)],
         "plat": "float", "plat_cols": [(150, 40, 80), (220, 90, 130), (240, 140, 170), (250, 200, 215), (255, 255, 255)],
     },
+    "quartel": {
+        "top": "moss", "top_cols": [(40, 82, 34), (62, 112, 44), (90, 138, 58), (130, 170, 80), (180, 206, 120)],
+        "body": "dirt", "body_cols": [(84, 60, 40), (110, 82, 56), (132, 102, 72), (150, 121, 102), (172, 150, 130)],
+        "plat": "crate", "plat_cols": [(52, 58, 36), (74, 90, 58), (107, 122, 74), (140, 152, 100), (190, 196, 150)],
+    },
+    "escolinha": {
+        "top": "floor", "top_cols": [(150, 140, 128), (196, 188, 176), (209, 200, 182), (230, 224, 212), (248, 244, 236)],
+        "body": "grid", "body_cols": [(150, 130, 112), (190, 170, 150), (207, 186, 169), (225, 207, 190), (240, 228, 214)],
+        "plat": "books", "plat_cols": [(213, 104, 39), (76, 160, 90), (60, 110, 200), (230, 190, 40), (246, 154, 82)],
+    },
     "praia": {
         "top": "sand", "top_cols": [(190, 172, 130), (214, 198, 160), (232, 222, 192), (244, 238, 216), (255, 252, 240)],
         "body": "speckle", "body_cols": [(150, 126, 90), (178, 152, 110), (200, 178, 136), (220, 202, 164), (236, 224, 196)],
@@ -298,7 +308,7 @@ def body_tile(style, C, rnd):
                 d.line([gx + s - 1, gy, gx + s - 1, gy + s - 1], fill=C[1])
                 if rnd.random() < 0.15:
                     d.point((gx + 3, gy + 3), fill=C[4])
-    elif style == "speckle":
+    elif style in ("speckle", "dirt"):
         for y in range(T):
             for x in range(T):
                 r = rnd.random()
@@ -306,7 +316,7 @@ def body_tile(style, C, rnd):
                     p[x, y] = C[1] + (255,)
                 elif r < 0.22:
                     p[x, y] = C[3] + (255,)
-        for _ in range(2):  # conchinhas
+        for _ in range(2 if style == "speckle" else 0):  # conchinhas (so na praia)
             x, y = rnd.randrange(3, T - 5), rnd.randrange(3, T - 4)
             d.ellipse([x, y, x + 4, y + 3], fill=(240, 200, 200))
             d.point((x + 2, y + 1), fill=(200, 140, 140))
@@ -350,6 +360,16 @@ def top_tile(theme, rnd, idx):
             d.line([x, 1, x, 5], fill=C[2])
         # agua escorrendo
         d.line([0, 8, T - 1, 8], fill=(150, 220, 240))
+    elif style == "floor":
+        # piso de marmore da escola, com rodape
+        d.rectangle([0, 0, T - 1, 8], fill=C[3])
+        d.line([0, 0, T - 1, 0], fill=C[4])
+        d.line([0, 8, T - 1, 8], fill=C[1])
+        d.line([0, 9, T - 1, 9], fill=C[0])
+        for x in range(0, T, 16):
+            d.line([x, 1, x, 7], fill=C[2])
+        for _ in range(3):
+            d.line([rnd.randrange(2, T - 6), rnd.randrange(2, 6), rnd.randrange(8, T - 2), rnd.randrange(2, 6)], fill=C[2])
     elif style == "sand":
         for y in range(7):
             d.line([0, y, T - 1, y], fill=lerp(C[4], C[2], y / 6))
@@ -399,6 +419,28 @@ def theme_platform(theme, part, rnd):
         d.line([2, 6, T - 3, 6], fill=C[3])
         d.line([2, 19, T - 3, 19], fill=C[0])
         d.line([0, 21, T - 1, 21], fill=OUTLINE)
+    elif style == "crate":
+        # caixote militar verde-oliva
+        d.rectangle([0, 2, T - 1, 22], fill=C[2])
+        d.rectangle([0, 2, T - 1, 4], fill=C[3])
+        d.line([0, 2, T - 1, 2], fill=C[4])
+        d.line([0, 20, T - 1, 20], fill=C[1])
+        d.line([0, 22, T - 1, 22], fill=OUTLINE)
+        d.line([2, 6, T - 3, 18], fill=C[1])
+        d.line([2, 18, T - 3, 6], fill=C[1])
+        d.rectangle([T // 2 - 4, 9, T // 2 + 3, 14], fill=C[0])
+        d.rectangle([T // 2 - 3, 10, T // 2 + 2, 13], fill=(230, 220, 120))
+    elif style == "books":
+        # pilha de livros coloridos
+        y = 22
+        for i, h in enumerate((7, 6, 6)):
+            col = C[(i + (1 if part == "m" else 0) + (2 if part == "r" else 0)) % 5]
+            x0, x1 = (1 + i, T - 2 - i) if part == "m" else (i % 2, T - 1 - (i + 1) % 2)
+            d.rectangle([x0, y - h, x1, y], fill=OUTLINE)
+            d.rectangle([x0 + 1, y - h + 1, x1 - 1, y - 1], fill=col)
+            d.line([x0 + 1, y - 2, x1 - 1, y - 2], fill=(250, 246, 236))
+            d.line([x0 + 1, y - h + 1, x1 - 1, y - h + 1], fill=lerp(col, (255, 255, 255), 0.4))
+            y -= h
     if part == "l":
         d.line([0, 2, 0, 22], fill=OUTLINE)
     if part == "r":
@@ -426,6 +468,8 @@ def make_springs():
         "bolinhas": ("tramp", (216, 48, 44), (246, 207, 30)),
         "parque": ("ring", (230, 100, 140), (255, 255, 255)),
         "praia": ("ring", (240, 120, 40), (255, 255, 255)),
+        "quartel": ("tire", (40, 40, 44), (90, 90, 96)),
+        "escolinha": ("tramp", (213, 104, 39), (246, 154, 82)),
     }
     for theme, (kind, c1, c2) in looks.items():
         img = Image.new("RGBA", (64, 24), (0, 0, 0, 0))
@@ -449,6 +493,16 @@ def make_springs():
                 d.ellipse([3, top, 28, top + 12 - (f * 4)], fill=OUTLINE)
                 d.ellipse([4, top + 1, 27, top + 11 - (f * 4)], fill=c2)
                 d.ellipse([13, 14, 18, 19], fill=(250, 250, 255))
+            elif kind == "tire":
+                # pneu deitado (achatado quando pisa)
+                h = 14 if f == 0 else 9
+                y0 = 23 - h
+                d.ellipse([1, y0, 30, 23], fill=OUTLINE)
+                d.ellipse([2, y0 + 1, 29, 22], fill=c2)
+                d.ellipse([3, y0 + 1, 28, 20], fill=c1)
+                d.ellipse([9, y0 + h // 3, 22, 23 - h // 3], fill=OUTLINE)
+                for x in range(5, 27, 4):
+                    d.line([x, y0 + 2, x + 1, y0 + 4], fill=c2)
             elif kind == "ring":
                 h = 16 if f == 0 else 10
                 y0 = 23 - h
@@ -556,6 +610,55 @@ def make_theme_enemies():
     d.ellipse([x0 + 3, 22, x0 + 29, 31], fill=OUTLINE)
     d.ellipse([x0 + 4, 23, x0 + 28, 30], fill=yl)
     img.save(OUT / "enemy-patinho.png")
+
+    # tatu (quartel)
+    img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    sh, shh, shd, skin = (150, 126, 100), (196, 174, 146), (100, 80, 62), (214, 170, 140)
+    for f in range(2):
+        x0, bob = f * W, f
+        for i, lx in enumerate((8, 22)):
+            off = 2 if (i + f) % 2 else -2
+            d.line([x0 + lx, 25, x0 + lx + off, 30], fill=OUTLINE, width=3)
+        d.pieslice([x0 + 3, 9 + bob, x0 + 27, 33 + bob], 180, 360, fill=OUTLINE)
+        d.pieslice([x0 + 4, 10 + bob, x0 + 26, 32 + bob], 180, 360, fill=sh)
+        for bx in range(8, 25, 4):  # faixas da carapaca
+            d.line([x0 + bx, 11 + bob, x0 + bx, 20 + bob], fill=shd)
+            d.point((x0 + bx - 1, 12 + bob), fill=shh)
+        d.rectangle([x0 + 4, 21 + bob, x0 + 26, 25], fill=OUTLINE)
+        d.rectangle([x0 + 5, 21 + bob, x0 + 25, 24], fill=shd)
+        d.ellipse([x0 + 22, 15 + bob, x0 + 31, 24 + bob], fill=OUTLINE)  # cabeca
+        d.ellipse([x0 + 23, 16 + bob, x0 + 30, 23 + bob], fill=skin)
+        d.polygon([(x0 + 24, 16 + bob), (x0 + 25, 11 + bob), (x0 + 27, 16 + bob)], fill=skin, outline=OUTLINE)  # orelha
+        d.point((x0 + 28, 18 + bob), fill=OUTLINE)
+        d.point((x0 + 31, 21 + bob), fill=OUTLINE)
+        d.line([x0 + 4, 21 + bob, x0 + 0, 24], fill=OUTLINE, width=2)  # rabinho
+    x0 = W * 2  # enrolado como bolinha (pisado)
+    d.ellipse([x0 + 7, 15, x0 + 25, 31], fill=OUTLINE)
+    d.ellipse([x0 + 8, 16, x0 + 24, 30], fill=sh)
+    for bx in range(11, 23, 3):
+        d.line([x0 + bx, 17, x0 + bx, 29], fill=shd)
+    img.save(OUT / "enemy-tatu.png")
+
+    # aviaozinho de papel (escolinha): voa, nao anda
+    img = Image.new("RGBA", (W * 3, W), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    paper, fold, shade = (250, 250, 246), (210, 214, 222), (160, 166, 180)
+    for f in range(3):
+        x0 = f * W
+        tilt = [0, 2, 0][f]
+        if f == 2:  # amassado
+            d.polygon([(x0 + 8, 26), (x0 + 16, 20), (x0 + 25, 25), (x0 + 18, 30), (x0 + 10, 30)], fill=paper, outline=OUTLINE)
+            d.line([x0 + 12, 24, x0 + 20, 28], fill=shade)
+            continue
+        d.polygon([(x0 + 2, 10 + tilt), (x0 + 30, 16), (x0 + 12, 18 + tilt)], fill=paper, outline=OUTLINE)
+        d.polygon([(x0 + 12, 18 + tilt), (x0 + 30, 16), (x0 + 10, 24 - tilt)], fill=fold, outline=OUTLINE)
+        d.line([x0 + 12, 18 + tilt, x0 + 30, 16], fill=shade)
+        d.ellipse([x0 + 18, 13, x0 + 21, 16], fill=OUTLINE)  # olhinho bravo
+        d.line([x0 + 17, 11, x0 + 22, 13], fill=OUTLINE)
+        d.line([x0 + 3, 20 + tilt, x0 + 8, 20 + tilt], fill=(120, 170, 230))
+        d.line([x0 + 1, 23 + tilt, x0 + 6, 23 + tilt], fill=(120, 170, 230))
+    img.save(OUT / "enemy-aviao.png")
 
 
 if __name__ == "__main__":

@@ -135,7 +135,49 @@ def praia():
     L.save("praia", "Praia")
 
 
+def quartel():
+    """Tatus correndo pelo gramado, caixotes empilhados e pneus de mola."""
+    L = Level()
+    L.ground(0, 24); L.put(3, G - 1, "P")
+    L.put(10, G - 1, "e"); L.coins(range(12, 16), G - 2); L.put(19, G - 1, "e")
+    L.plat(16, 18, 18); L.plat(20, 22, 15); L.coins(range(20, 23), 14)
+    L.ground(28, 44)
+    L.put(31, G - 1, "T"); L.arc(30, G - 8)
+    L.ground(35, 37, 19); L.ground(38, 40, 17)  # caixotes em escada (como chao)
+    L.coins([38, 39, 40], 15); L.put(43, G - 1, "e")
+    L.plat(47, 50, 18); L.put(49, 17, "e")
+    L.ground(53, 70)
+    L.put(56, G - 1, "e"); L.put(62, G - 1, "e"); L.put(67, G - 1, "e")
+    L.plat(58, 61, 17); L.coins(range(58, 62), 16)
+    L.put(69, G - 1, "T"); L.plat(71, 74, 12); L.coins(range(71, 75), 11)
+    L.ground(77, 84, 18); L.put(80, 17, "e")
+    L.ground(87, 111)
+    L.put(91, G - 1, "e"); L.coins(range(93, 98), G - 2); L.put(100, G - 1, "e")
+    L.put(106, G - 1, "F")
+    L.save("quartel", "Quartel")
+
+
+def escolinha():
+    """Avioezinhos de papel voando pela sala e pilhas de livros para subir."""
+    L = Level()
+    L.ground(0, 111); L.put(3, G - 1, "P")
+    L.put(12, G - 4, "e"); L.coins(range(8, 12), G - 2)
+    L.plat(15, 17, 18); L.plat(19, 21, 15); L.plat(23, 25, 12); L.coins(range(23, 26), 11)
+    L.put(29, G - 3, "e"); L.put(33, G - 1, "T"); L.arc(32, G - 8)
+    L.ground(37, 39, 19); L.ground(40, 42, 17); L.ground(43, 45, 15)  # degraus da escada
+    L.coins([43, 44, 45], 13); L.put(48, G - 5, "e")
+    L.plat(51, 54, 17); L.put(57, G - 3, "e"); L.coins(range(51, 55), 16)
+    L.put(61, G - 1, "T"); L.plat(63, 67, 11); L.coins(range(63, 68), 10); L.put(70, 9, "e")
+    L.plat(72, 75, 15); L.put(78, G - 4, "e")
+    L.ground(81, 86, 18); L.coins(range(81, 87), 16)
+    L.put(90, G - 3, "e"); L.put(96, G - 5, "e"); L.coins(range(92, 100, 2), G - 2)
+    L.put(106, G - 1, "F")
+    L.save("escolinha", "Escolinha")
+
+
 if __name__ == "__main__":
+    quartel()
+    escolinha()
     aquario()
     bolinhas()
     parque()

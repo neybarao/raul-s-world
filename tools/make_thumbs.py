@@ -47,7 +47,7 @@ def make(level, bg, tiles):
 
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
-    make("floresta", False, "tiles")
-    for lv in ("aquario", "bolinhas", "parque", "praia"):
+    make("floresta", True, "tiles")
+    for lv in ("aquario", "bolinhas", "parque", "praia", "quartel", "escolinha"):
         make(lv, True, f"tiles-{lv}")
     print("ok")

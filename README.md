@@ -10,11 +10,13 @@ Antes de jogar aparece o seletor de fases (toque no cartão duas vezes, ou direc
 
 | Fase | Desafio |
 |---|---|
-| Floresta | a fase original, com besouros |
+| Floresta | a fase original, com besouros (fundo no estilo da primeira arte do jogo) |
 | Aquário | águas-vivas flutuando sobre os buracos |
 | Piscina de Bolinhas | bolinhas bravas quicando e muitas molas |
 | Parque Aquático | piscinas largas: boias e plataformas flutuantes |
 | Praia | caranguejos e píer de madeira sobre o mar |
+| Quartel da Mamãe | tatus no gramado, caixotes em escada e pneus de mola |
+| Escolinha | aviõezinhos de papel voando pela sala e pilhas de livros |
 
 Os fundos das fases novas foram gerados no Magnific (GPT 2.6) em pixel art 32 bits, usando as
 cores das fotos de férias da família (só as paletas foram enviadas, não as fotos). Os mapas ficam

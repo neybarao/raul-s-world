@@ -4,22 +4,26 @@ import aquario from './aquario.js';
 import bolinhas from './bolinhas.js';
 import parque from './parque.js';
 import praia from './praia.js';
+import quartel from './quartel.js';
+import escolinha from './escolinha.js';
 
 // tipos de inimigo:
 //  walker  anda e vira na borda          floater  flutua subindo e descendo (nao cai)
 //  bouncer quica pelo chao
 export const ENEMIES = {
   besouro: { key: 'enemy', frame: [32, 28], body: [28, 22, 2, 6], kind: 'walker' },
-  aguaviva: { key: 'enemy-aguaviva', frame: [32, 32], body: [22, 20, 5, 4], kind: 'floater' },
+  aguaviva: { key: 'enemy-aguaviva', frame: [32, 32], body: [22, 20, 5, 4], kind: 'floater', amp: [28, 26] },
   bola: { key: 'enemy-bola', frame: [32, 32], body: [22, 22, 5, 9], kind: 'bouncer' },
   patinho: { key: 'enemy-patinho', frame: [32, 32], body: [24, 24, 4, 7], kind: 'walker' },
   caranguejo: { key: 'enemy-caranguejo', frame: [32, 32], body: [24, 16, 4, 15], kind: 'walker' },
+  tatu: { key: 'enemy-tatu', frame: [32, 32], body: [24, 16, 4, 14], kind: 'walker' },
+  aviao: { key: 'enemy-aviao', frame: [32, 32], body: [24, 12, 4, 10], kind: 'floater', amp: [72, 12] },
 };
 
 export const LEVELS = [
   {
     id: 'floresta', name: 'Floresta', map: floresta, enemy: 'besouro',
-    sky: '#5aa8e8', tiles: 'tiles', mola: 'mola-floresta', bg: null,
+    sky: '#0379f7', tiles: 'tiles', mola: 'mola-floresta', bg: 'bg-floresta',
   },
   {
     id: 'aquario', name: 'Aquário', map: aquario, enemy: 'aguaviva',
@@ -39,6 +43,14 @@ export const LEVELS = [
     id: 'praia', name: 'Praia', map: praia, enemy: 'caranguejo',
     sky: '#5089e5', tiles: 'tiles-praia', mola: 'mola-praia', bg: 'bg-praia',
     water: 0x3aa8c0,
+  },
+  {
+    id: 'quartel', name: 'Quartel da Mamãe', map: quartel, enemy: 'tatu',
+    sky: '#96b9bf', tiles: 'tiles-quartel', mola: 'mola-quartel', bg: 'bg-quartel',
+  },
+  {
+    id: 'escolinha', name: 'Escolinha', map: escolinha, enemy: 'aviao',
+    sky: '#978a66', tiles: 'tiles-escolinha', mola: 'mola-escolinha', bg: 'bg-escolinha',
   },
 ];
 
