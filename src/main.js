@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
+import { GRAVITY } from './config.js';
 
 // O canvas usa a resolucao real da tela (pixels fisicos) e o CSS reduz para o tamanho visual.
 // Assim o zoom da camera pode ser um numero inteiro de pixels fisicos e cada pixel da arte
@@ -24,7 +25,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   physics: {
     default: 'arcade',
-    arcade: { gravity: { y: 900 }, debug: false },
+    arcade: { gravity: { y: GRAVITY }, debug: false },
   },
   scene: [BootScene, GameScene, UIScene],
 });

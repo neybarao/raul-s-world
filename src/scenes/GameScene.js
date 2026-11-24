@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, PLAYER, ENEMY, DOG, VIEW, SKY } from '../config.js';
+import { TILE, U, PLAYER, ENEMY, DOG, VIEW, SKY } from '../config.js';
 import { touch, layout, computeLayout } from '../controls.js';
 import level1 from '../levels/level1.js';
 
@@ -25,7 +25,7 @@ export default class GameScene extends Phaser.Scene {
     this.invulnerableUntil = 0;
     this.knockbackUntil = 0;
 
-    this.physics.world.setBounds(0, 0, this.levelW, this.levelH + 200);
+    this.physics.world.setBounds(0, 0, this.levelW, this.levelH + 200 * U);
     this.physics.world.setBoundsCollision(true, true, false, false);
 
     this.buildBackground();
@@ -76,16 +76,16 @@ export default class GameScene extends Phaser.Scene {
 
   buildBackground() {
     this.cameras.main.setBackgroundColor(SKY);
-    const groundY = 21 * TILE + 8;
+    const groundY = 21 * TILE + 8 * U;
     const rnd = new Phaser.Math.RandomDataGenerator(['nuvens']);
     for (let i = 0; i < 14; i++) {
       this.add
-        .image(rnd.between(-200, this.levelW * 0.3 + 400), rnd.between(40, 200), 'cloud')
+        .image(rnd.between(-200 * U, this.levelW * 0.3 + 400 * U), rnd.between(40 * U, 200 * U), 'cloud')
         .setScrollFactor(0.1, 0.6)
         .setAlpha(0.95);
     }
-    this.add.tileSprite(-400, groundY, this.levelW + 800, 96, 'hills-far').setOrigin(0, 1).setScrollFactor(0.2, 1);
-    this.add.tileSprite(-400, groundY, this.levelW + 800, 96, 'trees-near').setOrigin(0, 1).setScrollFactor(0.45, 1);
+    this.add.tileSprite(-400 * U, groundY, this.levelW + 800 * U, 192, 'hills-far').setOrigin(0, 1).setScrollFactor(0.2, 1);
+    this.add.tileSprite(-400 * U, groundY, this.levelW + 800 * U, 192, 'trees-near').setOrigin(0, 1).setScrollFactor(0.45, 1);
   }
 
   spawnEntities() {
@@ -100,12 +100,12 @@ export default class GameScene extends Phaser.Scene {
         if (ch === 'P') this.spawn = { x: cx, y: bottom };
         if (ch === 'o') {
           const c = this.coins.create(cx, y * TILE + TILE / 2, 'coin');
-          c.body.setSize(10, 12);
+          c.body.setSize(20, 24);
           this.tweens.add({ targets: c, scaleX: 0.25, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: x * 40 });
         }
         if (ch === 'e') {
           const e = this.enemies.create(cx, bottom, 'enemy').setOrigin(0.5, 1);
-          e.body.setSize(14, 12).setOffset(1, 2);
+          e.body.setSize(28, 22).setOffset(2, 6);
           e.dir = -1;
           e.setVelocityX(-ENEMY.speed);
           e.play('enemy-walk');
@@ -113,7 +113,7 @@ export default class GameScene extends Phaser.Scene {
         if (ch === 'F') {
           this.flag = this.physics.add.staticImage(cx, bottom, 'flag').setOrigin(0.5, 1);
           this.flag.refreshBody();
-          this.flag.body.setSize(10, 56).setOffset(4, 0);
+          this.flag.body.setSize(20, 112).setOffset(8, 0);
         }
         // pontos de retorno: inicio de cada trecho de chao depois de um buraco
         if (ch === '#' && this.cell(x, y - 1) !== '#' && this.cell(x - 1, y) === ' ' && x > 0) {
@@ -124,15 +124,15 @@ export default class GameScene extends Phaser.Scene {
     this.respawnPoint = { ...this.spawn };
 
     this.player = this.physics.add.sprite(this.spawn.x, this.spawn.y, 'raul', 0).setOrigin(0.5, 1);
-    this.player.body.setSize(10, 24).setOffset(11, 20);
-    this.player.body.setMaxVelocityY(520);
+    this.player.body.setSize(20, 48).setOffset(22, 40);
+    this.player.body.setMaxVelocityY(520 * U);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);
 
     this.dog = this.add.sprite(this.spawn.x - DOG.followGap, this.spawn.y, 'dog', 0).setOrigin(0.5, 1).setDepth(9);
     this.dogTrail = [];
     this.dogIdleMs = 0;
-    this.zzz = this.add.text(0, 0, 'z', { fontFamily: 'monospace', fontSize: '8px', color: '#ffffff' }).setDepth(9).setVisible(false);
+    this.zzz = this.add.text(0, 0, 'z', { fontFamily: 'monospace', fontSize: '16px', color: '#ffffff' }).setDepth(9).setVisible(false);
 
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.enemies, this.layer);
@@ -145,7 +145,7 @@ export default class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBounds(0, 0, this.levelW, this.levelH);
     cam.startFollow(this.player, true, 0.12, 0.1);
-    cam.setDeadzone(8, 40);
+    cam.setDeadzone(8 * U, 40 * U);
     this.layoutCamera();
     cam.centerOn(this.player.x, this.player.y);
   }
@@ -161,7 +161,7 @@ export default class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setViewport(0, 0, L.width, viewH);
     cam.setZoom(zoom);
-    this.lookAhead = L.portrait ? 36 : 28;
+    this.lookAhead = (L.portrait ? 36 : 28) * U;
     this.game.events.emit('layout');
   }
 
@@ -234,9 +234,9 @@ export default class GameScene extends Phaser.Scene {
     p.setFlipX(this.facing < 0);
     if (time < this.knockbackUntil + 150) p.play('raul-hurt', true);
     else if (!onGround) p.play(body.velocity.y < 0 ? 'raul-jump' : 'raul-fall', true);
-    else if (Math.abs(body.velocity.x) > 12) {
+    else if (Math.abs(body.velocity.x) > 12 * U) {
       p.play('raul-run', true);
-      p.anims.timeScale = Math.abs(body.velocity.x) > PLAYER.speed + 10 ? 1.5 : 1;
+      p.anims.timeScale = Math.abs(body.velocity.x) > PLAYER.speed + 10 * U ? 1.5 : 1;
     } else p.play('raul-idle', true);
 
     // guarda o checkpoint mais adiantado ja alcancado
@@ -253,7 +253,7 @@ export default class GameScene extends Phaser.Scene {
       else if (b.blocked.right) e.dir = -1;
       else if (b.blocked.down) {
         // vira antes de cair da borda
-        const ahead = this.layer.getTileAtWorldXY(e.x + e.dir * 9, b.bottom + 2);
+        const ahead = this.layer.getTileAtWorldXY(e.x + e.dir * 9 * U, b.bottom + 2 * U);
         if (!ahead || !ahead.collides) e.dir *= -1;
       }
       e.setVelocityX(e.dir * ENEMY.speed);
@@ -269,7 +269,7 @@ export default class GameScene extends Phaser.Scene {
       this.dogTrail.push({ x: p.x, y: p.y });
     }
     // o cachorro percorre o mesmo caminho do Raul, com atraso, mantendo distancia
-    const far = Math.abs(d.x - p.x) > DOG.followGap || Math.abs(d.y - p.y) > 6;
+    const far = Math.abs(d.x - p.x) > DOG.followGap || Math.abs(d.y - p.y) > 6 * U;
     let moved = false;
     if (far && this.dogTrail.length > 0) {
       const steps = this.dogTrail.length > 40 ? 2 : 1;
@@ -287,7 +287,7 @@ export default class GameScene extends Phaser.Scene {
       d.play('dog-run', true);
     } else {
       this.dogIdleMs += delta;
-      if (Math.abs(p.x - d.x) > 2) d.setFlipX(p.x < d.x);
+      if (Math.abs(p.x - d.x) > 2 * U) d.setFlipX(p.x < d.x);
       if (this.dogIdleMs > DOG.sleepAfter) d.play('dog-sleep', true);
       else if (this.dogIdleMs > DOG.sitAfter) d.play('dog-sit', true);
       else d.play('dog-stand', true);
@@ -296,7 +296,7 @@ export default class GameScene extends Phaser.Scene {
     this.zzz.setVisible(sleeping);
     if (sleeping) {
       const tz = (this.time.now % 1500) / 1500;
-      this.zzz.setPosition(d.x + 4 + tz * 4, d.y - 14 - tz * 8).setAlpha(1 - tz);
+      this.zzz.setPosition(d.x + (4 + tz * 4) * U, d.y - (14 + tz * 8) * U).setAlpha(1 - tz);
     }
   }
 
@@ -306,14 +306,14 @@ export default class GameScene extends Phaser.Scene {
     c.body.enable = false;
     this.coinCount += 1;
     this.tweens.killTweensOf(c);
-    this.tweens.add({ targets: c, y: c.y - 14, alpha: 0, scaleX: 1, duration: 260, onComplete: () => c.destroy() });
+    this.tweens.add({ targets: c, y: c.y - 14 * U, alpha: 0, scaleX: 1, duration: 260, onComplete: () => c.destroy() });
     this.emitHud();
   }
 
   touchEnemy(e) {
     if (e.dead || this.state !== 'playing') return;
     const p = this.player.body;
-    const stomp = p.velocity.y > 0 && p.bottom <= e.body.top + 6;
+    const stomp = p.velocity.y > 0 && p.bottom <= e.body.top + 6 * U;
     if (stomp) {
       e.dead = true;
       e.anims.stop();
@@ -334,12 +334,12 @@ export default class GameScene extends Phaser.Scene {
     this.emitHud();
     if (this.hearts <= 0) {
       this.gameOver();
-      if (knockDir) this.player.body.setVelocity(knockDir * 60, -120);
+      if (knockDir) this.player.body.setVelocity(knockDir * 60 * U, -120 * U);
       return true;
     }
     this.invulnerableUntil = this.time.now + PLAYER.invulnerableMs;
     if (knockDir) {
-      this.player.body.setVelocity(knockDir * 150, -200);
+      this.player.body.setVelocity(knockDir * 150 * U, -200 * U);
       this.knockbackUntil = this.time.now + 220;
     }
     this.cameras.main.shake(120, 0.006);
@@ -352,7 +352,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   checkFall() {
-    if (this.player.y < this.levelH + 24) return;
+    if (this.player.y < this.levelH + 24 * U) return;
     this.invulnerableUntil = 0;
     this.hurt();
     // volta para o ultimo ponto seguro; se acabaram os coracoes, ele chora la
@@ -369,7 +369,7 @@ export default class GameScene extends Phaser.Scene {
     const p = this.player;
     p.body.setVelocityX(0);
     p.play('raul-jump');
-    this.tweens.add({ targets: p, y: p.y - 10, duration: 220, yoyo: true, repeat: 3, ease: 'Quad.out' });
+    this.tweens.add({ targets: p, y: p.y - 10 * U, duration: 220, yoyo: true, repeat: 3, ease: 'Quad.out' });
     this.game.events.emit('level-complete', { coins: this.coinCount, total: this.totalCoins() });
   }
 

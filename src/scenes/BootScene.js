@@ -14,10 +14,10 @@ export default class BootScene extends Phaser.Scene {
     const bar = this.add.rectangle(width / 2 - 80, height / 2, 0, 6, 0xffd23f).setOrigin(0, 0.5);
     this.load.on('progress', (p) => (bar.width = 160 * p));
 
-    this.load.spritesheet('raul', asset('sprites/raul.png'), { frameWidth: 32, frameHeight: 44 });
-    this.load.spritesheet('dog', asset('sprites/dog.png'), { frameWidth: 26, frameHeight: 20 });
-    this.load.spritesheet('enemy', asset('enemy.png'), { frameWidth: 16, frameHeight: 14 });
-    this.load.spritesheet('hearts', asset('hearts.png'), { frameWidth: 9, frameHeight: 8 });
+    this.load.spritesheet('raul', asset('sprites/raul.png'), { frameWidth: 64, frameHeight: 88 });
+    this.load.spritesheet('dog', asset('sprites/dog.png'), { frameWidth: 52, frameHeight: 40 });
+    this.load.spritesheet('enemy', asset('enemy.png'), { frameWidth: 32, frameHeight: 28 });
+    this.load.spritesheet('hearts', asset('hearts.png'), { frameWidth: 18, frameHeight: 16 });
     this.load.image('raul-face', asset('sprites/raul-face.png'));
     this.load.image('coin', asset('sprites/coin.png'));
     this.load.image('flag', asset('sprites/flag.png'));

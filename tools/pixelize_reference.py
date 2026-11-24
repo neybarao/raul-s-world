@@ -9,7 +9,7 @@ Isso mantem a cara do Raul da referencia, sem o borrado de uma simples reducao d
 from collections import deque
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 SHEET = ROOT / "art/concept/character-sheet.png"
@@ -35,10 +35,16 @@ DOG = {
     "sleep": (735, 845, 950, 975),
 }
 
-RAUL_SCALE = 34 / 368   # o Raul parado fica com 34 px de altura
-DOG_SCALE = 19 / 190    # o cachorro andando fica com 19 px
-RAUL_FRAME = (32, 44)
-DOG_FRAME = (26, 20)
+# Escala "32 bits": personagem grande, muitas cores, sombreado suave e contorno colorido.
+U = 2                       # multiplicador em relacao a versao 16 bits
+RAUL_SCALE = 34 * U / 368   # o Raul parado fica com 68 px de altura
+DOG_SCALE = 19 * U / 190    # o cachorro andando fica com 38 px
+RAUL_FRAME = (32 * U, 44 * U)
+DOG_FRAME = (26 * U, 20 * U)
+RAUL_COLORS = 64
+DOG_COLORS = 32
+COIN = (985, 825, 1055, 925)
+FLAG = (1366, 740, 1505, 975)
 
 
 # ---------- recorte e fundo ----------
@@ -49,7 +55,11 @@ def is_bg(px):
 
 
 def cut(sheet, box):
-    img = sheet.crop(box).convert("RGBA")
+    return cut_img(sheet.crop(box))
+
+
+def cut_img(img):
+    img = img.convert("RGBA")
     w, h = img.size
     px = img.load()
     seen = set()
@@ -136,6 +146,13 @@ def apply_palette(img, pal_img):
     q = rgb.quantize(palette=pal_img, dither=Image.Dither.NONE).convert("RGBA")
     out = Image.new("RGBA", img.size, (0, 0, 0, 0))
     out.paste(q, (0, 0), img.split()[3].point(lambda a: 255 if a else 0))
+    # pixels de lagrima (azul forte) nao passam pela paleta, senao viram cinza
+    src, dst = img.load(), out.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = src[x, y]
+            if a and b > r + 50 and b > 150:
+                dst[x, y] = TEAR_HI if g > 215 else TEAR
     return out
 
 
@@ -155,8 +172,8 @@ def outline(img):
             )
             if edge:
                 r, g, b, _ = src[x, y]
-                # mantem o contorno escuro, mas puxa a cor original para nao ficar chapado
-                dst[x, y] = (int(OUTLINE[0] * 0.8 + r * 0.2), int(OUTLINE[1] * 0.8 + g * 0.2), int(OUTLINE[2] * 0.8 + b * 0.2), 255)
+                # contorno colorido (estilo 32 bits): a propria cor bem escurecida
+                dst[x, y] = (int(OUTLINE[0] * 0.55 + r * 0.25), int(OUTLINE[1] * 0.55 + g * 0.25), int(OUTLINE[2] * 0.55 + b * 0.25), 255)
     return out
 
 
@@ -183,73 +200,50 @@ def head_swap(body, face, head_h_ratio, head_w):
     return out
 
 
-def sitting(idle, face):
-    """Raul sentado: cabeca triste, tronco e bermuda, tenis logo abaixo (pernas encolhidas)."""
-    w, h = idle.size
-    torso = idle.crop((0, int(h * 0.47), w, int(h * 0.80)))
-    shoes = idle.crop((0, int(h * 0.88), w, h))
-    scale = (w * 0.98) / face.width
-    f = face.resize((int(face.width * scale), int(face.height * scale)), Image.LANCZOS)
-    total = f.height - 14 + torso.height + shoes.height - 18
-    out = Image.new("RGBA", (w, total), (0, 0, 0, 0))
-    y = f.height - 14
-    out.alpha_composite(torso, (0, y))
-    out.alpha_composite(shoes, (0, y + torso.height - 18))
-    out.alpha_composite(f, ((w - f.width) // 2, 0))
-    return out
+# pecas da pose sentada, em coordenadas do sheet
+TORSO = (425, 280, 615, 410)       # tronco e bermuda do Raul parado
+BACK_SHOE = (955, 360, 1013, 448)  # tenis de tras da corrida; espelhado fica de bico para cima
 
 
-def legs_forward(img):
-    """Tira os tenis de baixo e desenha as pernas esticadas no chao, para a direita."""
-    w, h = img.size
-    p = img.load()
-    # bermuda termina onde comecam os tenis; corta as ultimas linhas
-    cut_rows = 3
-    body = img.crop((0, 0, w, h - cut_rows))
-    bw, bh = body.size
-    out = Image.new("RGBA", (w + 7, bh + 1), (0, 0, 0, 0))
-    out.alpha_composite(body, (0, 0))
-    q = out.load()
-    SKIN, SKIN_D = (240, 176, 128, 255), (206, 136, 96, 255)
-    SHOE, SOLE = (214, 46, 40, 255), (246, 246, 246, 255)
-    # bermuda encostada no chao: fecha a base com contorno
-    y0 = bh - 2
-    x_start = bw - 4
-    for x in range(x_start, w + 3):
-        q[x, y0 - 1] = OUTLINE if q[x, y0 - 1][3] == 0 else q[x, y0 - 1]
-        q[x, y0] = SKIN
-        q[x, y0 + 1] = SKIN_D
-        q[x, y0 + 2] = OUTLINE
-    # tenis na ponta
-    for dy in range(-3, 3):
-        for dx in range(4):
-            x, y = w + 3 + dx, y0 + dy
-            if dy == -3 or dx == 3 or dy == 2:
-                q[x, y] = OUTLINE
-            elif dy == 1:
-                q[x, y] = SOLE
-            else:
-                q[x, y] = SHOE
-    q[w + 2, y0 - 1] = OUTLINE
-    return out
+def crying_face(sheet, variant):
+    """Rosto triste com lagrimas pintadas em resolucao cheia (antes de reduzir)."""
+    face = sheet.crop(FACE_SAD).convert("RGBA")
+    d = ImageDraw.Draw(face)
+    length = 46 if variant == 0 else 34
+    drop = 0 if variant == 0 else 18
+    for ex, ey in ((96, 156), (160, 159)):
+        d.rounded_rectangle([ex - 6, ey, ex + 6, ey + length], radius=6, fill=TEAR)
+        d.rounded_rectangle([ex - 3, ey + 2, ex, ey + length - 6], radius=2, fill=TEAR_HI)
+        if drop:  # gota caindo separada
+            d.ellipse([ex - 6, ey + length + drop, ex + 6, ey + length + drop + 14], fill=TEAR)
+    return cut_img(face)
 
 
-def add_tears(img, variant):
-    """Lagrimas desenhadas ja em pixel, abaixo dos olhos."""
-    out = img.copy()
-    p = out.load()
-    w, h = out.size
-    # olhos ficam por volta de 40% da altura da cabeca e 35%/68% da largura
-    ey = int(h * 0.30)
-    for ex in (int(w * 0.36), int(w * 0.66)):
-        drops = [(0, 1), (0, 2), (0, 3)] if variant == 0 else [(0, 2), (0, 3), (0, 4)]
-        for dx, dy in drops:
-            x, y = ex + dx, ey + dy
-            if 0 <= x < w and 0 <= y < h and p[x, y][3]:
-                p[x, y] = TEAR
-        x, y = ex, ey + drops[0][1]
-        if p[x, y][3]:
-            p[x, y] = TEAR_HI
+def sitting(sheet, idle_w, variant):
+    """Raul sentado no chao, olhando para a direita, com as pernas esticadas e chorando."""
+    face = crying_face(sheet, variant)
+    torso = cut(sheet, TORSO)
+    shoe = cut(sheet, BACK_SHOE).transpose(Image.FLIP_LEFT_RIGHT)
+    scale = idle_w * 0.98 / face.width
+    face = face.resize((int(face.width * scale), int(face.height * scale)), Image.LANCZOS)
+    bob = 0 if variant == 0 else 6  # ombros sobem no soluco
+    torso_y = face.height - 22 + bob
+    ground = torso_y + torso.height + 4
+    shin_x0 = int(torso.width * 0.45)
+    shoe_x = int(torso.width * 0.80)
+    w = max(torso.width, shoe_x + shoe.width, face.width)
+    out = Image.new("RGBA", (w, ground), (0, 0, 0, 0))
+    out.alpha_composite(torso, (0, torso_y))
+    # canela esticada no chao, com contorno e sombra embaixo
+    d = ImageDraw.Draw(out)
+    top = ground - 46
+    d.rounded_rectangle([shin_x0, top, shoe_x + 24, ground - 2], radius=18, fill=(244, 178, 128, 255), outline=(40, 20, 14, 255), width=6)
+    d.rounded_rectangle([shin_x0 + 8, ground - 18, shoe_x + 16, ground - 9], radius=4, fill=(214, 140, 96, 255))
+    d.rounded_rectangle([shin_x0 + 10, top + 9, shoe_x + 10, top + 16], radius=4, fill=(254, 214, 172, 255))
+    # meia branca
+    d.rectangle([shoe_x + 4, top + 6, shoe_x + 20, ground - 8], fill=(246, 246, 246, 255))
+    out.alpha_composite(shoe, (shoe_x, ground - shoe.height))
+    out.alpha_composite(face, ((torso.width - face.width) // 2, bob))
     return out
 
 
@@ -260,28 +254,30 @@ def main():
     raul_full = {k: cut(sheet, b) for k, b in RAUL.items()}
     sad = cut(sheet, FACE_SAD)
     raul_full["hurt"] = head_swap(raul_full["jump"], sad, 0.43, raul_full["idle"].width * 0.98)
-    raul_full["sit"] = sitting(raul_full["idle"], sad)
+    raul_full["cry1"] = sitting(sheet, raul_full["idle"].width, 0)
+    raul_full["cry2"] = sitting(sheet, raul_full["idle"].width, 1)
 
-    order = ["idle", "run1", "run2", "jump", "hurt", "sit"]
+    order = ["idle", "run1", "run2", "jump", "hurt", "cry1", "cry2"]
     small = [shrink(raul_full[k], RAUL_SCALE) for k in order]
-    pal = build_palette(small, 22)
+    pal = build_palette(small, RAUL_COLORS)
     frames = [outline(apply_palette(s, pal)) for s in small]
-    sit = legs_forward(frames[5])
-    frames[5] = add_tears(sit, 0)
-    frames.append(add_tears(sit, 1))
     # ordem final: 0 parado, 1 corrida1, 2 corrida2, 3 pulo, 4 dano, 5 choro1, 6 choro2
     place(frames, *RAUL_FRAME).save(OUT / "raul.png")
     print("raul", [f.size for f in frames])
 
     dog_small = [shrink(cut(sheet, DOG[k]), DOG_SCALE) for k in ("walk", "run", "sit", "sleep")]
-    dpal = build_palette(dog_small, 12)
+    dpal = build_palette(dog_small, DOG_COLORS)
     dog_frames = [outline(apply_palette(s, dpal)) for s in dog_small]
     place(dog_frames, *DOG_FRAME).save(OUT / "dog.png")
     print("dog", [f.size for f in dog_frames])
 
-    face = shrink(cut(sheet, FACE_HAPPY), 24 / 236)
-    fpal = build_palette([face], 16)
-    outline(apply_palette(face, fpal)).save(OUT / "raul-face.png")
+    face = shrink(cut(sheet, FACE_HAPPY), 24 * U / 236)
+    outline(apply_palette(face, build_palette([face], 48))).save(OUT / "raul-face.png")
+
+    for name, box, height, colors in (("coin", COIN, 14 * U, 16), ("flag", FLAG, 56 * U, 24)):
+        img = cut(sheet, box)
+        small = shrink(img, height / img.height)
+        outline(apply_palette(small, build_palette([small], colors))).save(OUT / f"{name}.png")
 
 
 if __name__ == "__main__":

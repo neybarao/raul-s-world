@@ -69,12 +69,16 @@ export default class UIScene extends Phaser.Scene {
     if (!this.face) return;
     const s = this.s;
     const m = 6 * s;
-    this.face.setScale(s).setPosition(m, m);
-    this.faceFrame.clear().lineStyle(s, 0xffffff, 1).strokeRect(m - s, m - s, 21 * s + 2 * s, 24 * s + 2 * s);
+    // a arte do HUD tem o dobro de resolucao (escala 32 bits), por isso metade da escala
+    const hs = s / 2;
+    this.face.setScale(hs).setPosition(m, m);
+    const fw = this.face.displayWidth;
+    const fh = this.face.displayHeight;
+    this.faceFrame.clear().lineStyle(s, 0xffffff, 1).strokeRect(m - s, m - s, fw + 2 * s, fh + 2 * s);
 
     while (this.heartImgs.length < this.hud.max) this.heartImgs.push(this.add.image(0, 0, 'hearts', 0).setOrigin(0, 0));
     this.heartImgs.forEach((h, i) => {
-      h.setScale(s).setPosition(m + 25 * s + i * 10 * s, m + 2 * s).setFrame(i < this.hud.hearts ? 0 : 1);
+      h.setScale(hs).setPosition(m + fw + 4 * s + i * 10 * s, m + 2 * s).setFrame(i < this.hud.hearts ? 0 : 1);
     });
 
     const right = layout.width - m;
@@ -86,7 +90,7 @@ export default class UIScene extends Phaser.Scene {
     this.pauseZone.setPosition(right - pb - pad, m - pad).setSize(pb + 2 * pad, pb + 2 * pad);
     if (this.pauseZone.input) this.pauseZone.input.hitArea.setSize(pb + 2 * pad, pb + 2 * pad);
 
-    this.coinIcon.setScale(s * 0.8).setPosition(right - pb - 60 * s, m + pb / 2);
+    this.coinIcon.setScale(s * 0.4).setPosition(right - pb - 60 * s, m + pb / 2);
     this.coinText.setFontSize(9 * s).setStroke('#1b1b2a', s * 1.5).setPosition(right - pb - 50 * s, m + pb / 2).setText(`x ${this.hud.coins}`);
   }
 
