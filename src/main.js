@@ -13,7 +13,7 @@ import { musicState } from './music.js';
 const dpr = () => Math.min(window.devicePixelRatio || 1, 4);
 // No iPhone, com o jogo instalado na tela de inicio (barra de status transparente), o
 // window.innerHeight vem menor que a tela (desconta a barra de status) e sobrava uma faixa vazia
-// embaixo. Como app, mede a altura por um elemento de 100vh, que ocupa a tela inteira.
+// embaixo. Como app, completa a altura com a da tela (screen) ou de um elemento de 100vh.
 const standalone = () =>
   window.navigator.standalone === true ||
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -22,8 +22,21 @@ const probe = document.createElement('div');
 probe.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:100vh;visibility:hidden;pointer-events:none';
 document.body.appendChild(probe);
 const cssSize = () => {
-  const h = standalone() ? Math.max(window.innerHeight, probe.offsetHeight) : window.innerHeight;
-  return { w: window.innerWidth, h };
+  let w = window.innerWidth;
+  let h = window.innerHeight;
+  if (standalone()) {
+    h = Math.max(h, probe.offsetHeight);
+    // iPhone: screen.width/height sao sempre os da tela em pe; o lado maior e a altura em pe
+    const long = Math.max(window.screen.width, window.screen.height);
+    const short = Math.min(window.screen.width, window.screen.height);
+    const portrait = w < h;
+    const fullH = portrait ? long : short;
+    const fullW = portrait ? short : long;
+    // so completa o que falta (ate a barra de status, ~60 pt); nunca aumenta alem da tela
+    if (fullH > h && fullH - h < 80) h = fullH;
+    if (fullW > w && fullW - w < 80) w = fullW;
+  }
+  return { w, h };
 };
 
 const { w, h } = cssSize();
@@ -51,6 +64,9 @@ function fit() {
   game.scale.resize(Math.round(w * dpr()), Math.round(h * dpr()));
   game.canvas.style.width = `${w}px`;
   game.canvas.style.height = `${h}px`;
+  const box = document.getElementById('game');
+  box.style.width = `${w}px`;
+  box.style.height = `${h}px`;
   game.scale.refresh();
 }
 game.events.once('ready', fit);
