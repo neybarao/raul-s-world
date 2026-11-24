@@ -24,6 +24,7 @@ export default class GameScene extends Phaser.Scene {
     this.levelW = this.rows[0].length * TILE;
     this.levelH = this.rows.length * TILE;
     this.state = 'playing';
+    this.ending = null;
     this.hearts = PLAYER.maxHearts;
     this.coinCount = 0;
     this.facing = 1;
@@ -151,9 +152,11 @@ export default class GameScene extends Phaser.Scene {
           m.body.setSize(28, 14).setOffset(2, 10);
         }
         if (ch === 'F') {
-          this.flag = this.physics.add.staticImage(cx, bottom, 'flag').setOrigin(0.5, 1);
-          this.flag.refreshBody();
-          this.flag.body.setSize(20, 112).setOffset(8, 0);
+          // fim da fase: a mamae agachada de bracos abertos
+          this.mom = this.add.sprite(cx + TILE, bottom, 'mamae', 0).setOrigin(0.5, 1).setDepth(8).play('mamae-wait');
+          // area que dispara o final: um pouco antes da mamae
+          this.flag = this.add.zone(cx - 3 * TILE, bottom - 4 * TILE, 3 * TILE, 4 * TILE).setOrigin(0, 0);
+          this.physics.add.existing(this.flag, true);
         }
         // pontos de retorno: inicio de cada trecho de chao depois de um buraco
         if (ch === '#' && this.cell(x, y - 1) !== '#' && this.cell(x - 1, y) === ' ' && x > 0) {
@@ -241,12 +244,15 @@ export default class GameScene extends Phaser.Scene {
       this.checkFall();
     } else if (this.state === 'over') {
       this.updateCrying();
+    } else if (this.state === 'won') {
+      this.updateEnding();
     }
     this.updateEnemies();
     this.updateDog(delta);
     if (this.waves) this.drawWaves(time);
     const cam = this.cameras.main;
-    cam.followOffset.x = Phaser.Math.Linear(cam.followOffset.x, -this.facing * this.lookAhead, 0.04);
+    if (this.ending === 'hug') cam.stopFollow();
+    else cam.followOffset.x = Phaser.Math.Linear(cam.followOffset.x, -this.facing * this.lookAhead, 0.04);
   }
 
   readInput() {
@@ -462,15 +468,80 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.centerOn(r.x, r.y);
   }
 
+  // Final da fase: o Raul corre sozinho, pula no colo da mamae, ela gira e abraca.
   reachFlag() {
     if (this.state !== 'playing') return;
     this.state = 'won';
+    this.ending = 'run';
+    this.endingAt = this.time.now;
+    this.facing = 1;
+    this.invulnerableUntil = Infinity;
+    this.tweens.killTweensOf(this.player);
+    this.player.setAlpha(1);
+  }
+
+  updateEnding() {
     const p = this.player;
-    p.body.setVelocityX(0);
-    p.play('raul-jump');
-    this.tweens.add({ targets: p, y: p.y - 10 * U, duration: 220, yoyo: true, repeat: 3, ease: 'Quad.out' });
-    const best = this.saveBest();
-    this.game.events.emit('level-complete', { coins: this.coinCount, total: this.totalCoins(), best });
+    const body = p.body;
+    const mom = this.mom;
+    const target = mom.x - 20 * U;
+    if (this.ending === 'run') {
+      p.setFlipX(false);
+      body.setVelocityX(PLAYER.speed);
+      if (body.blocked.down) p.play('raul-run', true);
+      if (p.x >= target - 26 * U && body.blocked.down) {
+        // pulinho para o colo
+        this.ending = 'jump';
+        body.setVelocity(PLAYER.speed * 0.7, -PLAYER.jumpVelocity * 0.55);
+        p.play('raul-jump', true);
+        mom.play('mamae-wait', true);
+      } else if (this.time.now - this.endingAt > 6000) {
+        p.x = target - 30 * U; // garantia: nunca fica preso no caminho
+      }
+    } else if (this.ending === 'jump') {
+      if (p.x >= target || (body.velocity.y > 0 && body.blocked.down)) this.hug();
+    }
+  }
+
+  hug() {
+    this.ending = 'hug';
+    const p = this.player;
+    p.body.setVelocity(0, 0);
+    p.body.enable = false;
+    p.setVisible(false);
+    const mom = this.mom;
+    mom.play('mamae-hug');
+    // gira (vira de lado e volta) e abraca
+    this.tweens.add({
+      targets: mom, scaleX: { from: 1, to: -1 }, duration: 260, yoyo: true, repeat: 2, ease: 'Sine.inOut',
+      onComplete: () => {
+        mom.setScale(1);
+        mom.play('mamae-hug-love');
+        this.burstHearts(mom.x, mom.y - mom.height * 0.75);
+      },
+    });
+    this.cameras.main.pan(mom.x - 20 * U, mom.y - 40 * U, 600, 'Sine.easeInOut');
+    this.time.delayedCall(2600, () => {
+      const best = this.saveBest();
+      this.game.events.emit('level-complete', { coins: this.coinCount, total: this.totalCoins(), best });
+    });
+  }
+
+  burstHearts(x, y) {
+    for (let i = 0; i < 7; i++) {
+      const h = this.add.image(x, y, 'hearts', 0).setDepth(20).setScale(0.6);
+      this.tweens.add({
+        targets: h,
+        x: x + Phaser.Math.Between(-40, 40) * U,
+        y: y - Phaser.Math.Between(30, 70) * U,
+        alpha: { from: 1, to: 0 },
+        scale: { from: 0.5, to: 1.1 },
+        duration: 1400,
+        delay: i * 120,
+        ease: 'Sine.out',
+        onComplete: () => h.destroy(),
+      });
+    }
   }
 
   saveBest() {

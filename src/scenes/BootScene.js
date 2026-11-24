@@ -21,7 +21,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('hearts', asset('hearts.png'), { frameWidth: 18, frameHeight: 16 });
     this.load.image('raul-face', asset('sprites/raul-face.png'));
     this.load.image('coin', asset('sprites/coin.png'));
-    this.load.image('flag', asset('sprites/flag.png'));
+    this.load.spritesheet('mamae', asset('sprites/mamae.png'), { frameWidth: 88, frameHeight: 112 });
     this.load.image('tiles', asset('tiles.png'));
     // fases novas: chao, fundo, mola e inimigo de cada uma
     for (const lv of LEVELS) {
@@ -47,10 +47,13 @@ export default class BootScene extends Phaser.Scene {
     a.create({ key: 'raul-fall', frames: f('raul', [9]) });
     a.create({ key: 'raul-hurt', frames: f('raul', [10]) });
     a.create({ key: 'raul-cry', frames: f('raul', [11, 12]), frameRate: 3, repeat: -1 });
-    a.create({ key: 'dog-run', frames: f('dog', [0, 1]), frameRate: 8, repeat: -1 });
+    a.create({ key: 'mamae-wait', frames: f('mamae', [0, 1]), frameRate: 2, repeat: -1 });
+    a.create({ key: 'mamae-hug', frames: f('mamae', [2]) });
+    a.create({ key: 'mamae-hug-love', frames: f('mamae', [3]) });
+    a.create({ key: 'dog-run', frames: f('dog', [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), frameRate: 20, repeat: -1 });
     a.create({ key: 'dog-stand', frames: f('dog', [0]) });
-    a.create({ key: 'dog-sit', frames: f('dog', [2]) });
-    a.create({ key: 'dog-sleep', frames: f('dog', [3]) });
+    a.create({ key: 'dog-sit', frames: f('dog', [1]) });
+    a.create({ key: 'dog-sleep', frames: f('dog', [2]) });
     for (const en of Object.values(ENEMIES)) {
       a.create({ key: `${en.key}-walk`, frames: a.generateFrameNumbers(en.key, { frames: [0, 1] }), frameRate: 5, repeat: -1 });
     }

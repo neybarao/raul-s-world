@@ -31,7 +31,7 @@ export default class UIScene extends Phaser.Scene {
     const ev = this.game.events;
     const onHud = (h) => { this.hud = h; this.drawHud(); };
     const onLayout = () => this.relayout();
-    const onWin = (d) => this.showOverlay('Fase completa!', `Moedas: ${d.coins} de ${d.total}`, 'Toque para escolher outra fase', { kind: 'win' });
+    const onWin = (d) => this.showOverlay('Fase completa!', `Moedas: ${d.coins} de ${d.total}`, 'Toque para escolher outra fase', { kind: 'win', light: true });
     const onOver = () => this.time.delayedCall(1800, () => this.mode === 'game' && this.showOverlay('Ai, ai, ai!', 'O Raul se machucou', 'Toque para tentar de novo', { light: true, menu: true }));
     const onMode = (m) => { this.mode = m; this.paused = false; this.hideOverlay(); this.drawHud(); };
     ev.on('hud', onHud);

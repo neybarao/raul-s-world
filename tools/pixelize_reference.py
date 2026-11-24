@@ -52,6 +52,13 @@ RUN_FRAMES = 8
 # Raul sentado chorando: 2 quadros lado a lado, gerados no Magnific (GPT 2.6)
 CRY_SHEET = ROOT / "art/concept/cry-sheet.jpg"
 CRY_HEIGHT = 56  # sentado ele fica mais baixo que em pe (66)
+# Mamae: 4 quadros lado a lado (agachada x2, abracando o Raul x2), gerados no Magnific (GPT 2.6)
+MOM_SHEET = ROOT / "art/concept/mamae-sheet.jpg"
+# Corrida do cachorro: quadros de um video (Magnific, Seedance 2.0 Mini), mesma folha 4x4 com legendas
+DOG_RUN_SHEET = ROOT / "art/concept/dog-run-video.jpg"
+DOG_RUN_FRAMES = 10
+MOM_STAND_HEIGHT = 104  # em pe, segurando o Raul
+MOM_FRAME = (88, 112)
 COIN = (985, 825, 1055, 925)
 FLAG = (1366, 740, 1505, 975)
 
@@ -86,6 +93,18 @@ def cut_img(img):
         px[x, y] = (0, 0, 0, 0)
         q.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
     return keep_main_blob(img)
+
+
+def clear_enclosed_bg(img, tol=16):
+    """Apaga o fundo creme que ficou preso dentro do desenho (entre pernas, bracos)."""
+    px = img.load()
+    bg = (248, 241, 230)
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if a and abs(r - bg[0]) < tol and abs(g - bg[1]) < tol and abs(b - bg[2]) < tol:
+                px[x, y] = (0, 0, 0, 0)
+    return img
 
 
 def keep_main_blob(img, min_ratio=0.03):
@@ -203,13 +222,13 @@ def place(frames, fw, fh, lift=None, anchor=None):
     return sheet
 
 
-def run_cycle():
+def run_cycle(sheet=None, count=None, head_side="center"):
     """Recorta os quadros da corrida; devolve o desenho, a altura acima do chao e o centro da cabeca."""
-    img = Image.open(RUN_SHEET).convert("RGBA")
+    img = Image.open(sheet or RUN_SHEET).convert("RGBA")
     cols, rows = RUN_GRID
     cw, ch = img.width // cols, img.height // rows
     raw = []
-    for i in range(RUN_FRAMES):
+    for i in range(count or RUN_FRAMES):
         r, c = divmod(i, cols)
         cell = img.crop((c * cw + 4, r * ch + 4, (c + 1) * cw - 4, r * ch + RUN_CELL_IMG_H - 4))
         fig = cut_img(cell)
@@ -219,7 +238,10 @@ def run_cycle():
         full = cut_img_keep_pos(rgba)
         box = full.getbbox()
         head = full.crop((box[0], box[1], box[2], box[1] + int((box[3] - box[1]) * 0.35))).getbbox()
-        head_cx = box[0] + (head[0] + head[2]) / 2
+        if head_side == "right":  # cachorro: a cabeca fica na frente (direita); usa a ponta do focinho
+            head_cx = box[0] + head[2] - 12
+        else:
+            head_cx = box[0] + (head[0] + head[2]) / 2
         raw.append((fig, box[3], head_cx - box[0]))
     ground = max(b for _, b, _ in raw)
     frames = [f for f, _, _ in raw]
@@ -320,11 +342,30 @@ def main():
     place(frames, *RAUL_FRAME, lift=lift, anchor=anchor).save(OUT / "raul.png")
     print("raul", [f.size for f in frames])
 
-    dog_small = [shrink(cut(sheet, DOG[k]), DOG_SCALE) for k in ("walk", "run", "sit", "sleep")]
+    # parado, sentado e dormindo vem do sheet; a corrida vem do video
+    dog_still = [shrink(cut(sheet, DOG[k]), DOG_SCALE) for k in ("walk", "sit", "sleep")]
+    drun_full, drun_lift, drun_head = run_cycle(DOG_RUN_SHEET, DOG_RUN_FRAMES, head_side="right")
+    dscale = 36 / max(f.height for f in drun_full)
+    drun_small = [shrink(f, dscale) for f in drun_full]
+    dog_small = dog_still + drun_small
     dpal = build_palette(dog_small, DOG_COLORS)
     dog_frames = [outline(apply_palette(s, dpal)) for s in dog_small]
-    place(dog_frames, *DOG_FRAME).save(OUT / "dog.png")
+    # ordem final: 0 parado, 1 sentado, 2 dormindo, 3-12 correndo
+    dlift = {3 + i: round(l * dscale) for i, l in enumerate(drun_lift)}
+    danchor = {3 + i: h * dscale - 6 for i, h in enumerate(drun_head)}
+    place(dog_frames, *DOG_FRAME, lift=dlift, anchor=danchor).save(OUT / "dog.png")
     print("dog", [f.size for f in dog_frames])
+
+    # mamae
+    mom = Image.open(MOM_SHEET).convert("RGBA")
+    cw = mom.width // 4
+    mom_full = [clear_enclosed_bg(cut_img(mom.crop((i * cw + 4, 4, (i + 1) * cw - 4, mom.height - 4)))) for i in range(4)]
+    mscale = MOM_STAND_HEIGHT / max(mom_full[2].height, mom_full[3].height)
+    mom_small = [shrink(f, mscale) for f in mom_full]
+    mpal = build_palette(mom_small, 64)
+    mom_frames = [outline(apply_palette(f, mpal)) for f in mom_small]
+    place(mom_frames, *MOM_FRAME).save(OUT / "mamae.png")
+    print("mamae", [f.size for f in mom_frames])
 
     face = shrink(cut(sheet, FACE_HAPPY), 24 * U / 236)
     outline(apply_palette(face, build_palette([face], 48))).save(OUT / "raul-face.png")

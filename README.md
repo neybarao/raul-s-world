@@ -6,6 +6,9 @@ Roda no navegador: em pé no celular (com botões na faixa de baixo) e deitado n
 Jogar: https://neybarao.github.io/raul-s-world/
 
 ## Fases
+No fim de cada fase o Raul corre para o colo da mamãe (agachada de braços abertos), que o pega,
+gira e abraça. A mamãe foi desenhada no Magnific a partir de uma descrição.
+
 Antes de jogar aparece o seletor de fases (toque no cartão duas vezes, ou direcional + A, ou setas + Enter):
 
 | Fase | Desafio |
@@ -67,6 +70,7 @@ desenhados por código (`tools/make_tiles.py`).
 | Arquivo | Quadros |
 |---|---|
 | `sprites/raul.png` | 13 quadros de 64×88 (parado, corrida 1 a 8, pulo, dano, choro 1, choro 2) |
-| `sprites/dog.png` | 4 quadros de 52×40 (andando, correndo, sentado, dormindo) |
+| `sprites/dog.png` | 13 quadros de 52×40 (parado, sentado, dormindo, corrida 1 a 10) |
+| `sprites/mamae.png` | 4 quadros de 88×112 (agachada 1 e 2, abraçando o Raul 1 e 2) |
 | `enemy.png` | 3 quadros de 32×28 (andando 1, andando 2, amassado) |
 | `tiles.png` | 9 tiles de 32×32, margem 1 e espaçamento 2 |
