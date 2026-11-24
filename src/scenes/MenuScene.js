@@ -41,7 +41,7 @@ export default class MenuScene extends Phaser.Scene {
       card.add([card.frame, card.thumb, card.label, card.best]);
       card.zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
       card.zone.on('pointerup', (pointer) => {
-        if (this.isSwipe(pointer)) return; // arrastar o carrossel nao conta como toque
+        if (!this.pressedHere || this.isSwipe(pointer)) return; // arrastar o carrossel nao conta como toque
         if (this.selected === i) this.start(i);
         else this.select(i);
       });
@@ -49,9 +49,13 @@ export default class MenuScene extends Phaser.Scene {
     });
     this.dots = this.add.graphics();
     this.carouselReady = false;
+    // so vale toque que COMECOU com o seletor aberto: o dedo que apertou "Escolher fase" na pausa
+    // ainda esta na tela quando o seletor abre, e soltar ele em cima do cartao reiniciava a fase
+    this.pressedHere = false;
+    this.input.on('pointerdown', () => (this.pressedHere = true));
     // carrossel: arrastar o dedo para os lados troca de fase
     this.input.on('pointerup', (pointer) => {
-      if (!this.carousel || !this.isSwipe(pointer)) return;
+      if (!this.carousel || !this.pressedHere || !this.isSwipe(pointer)) return;
       this.move(pointer.upX < pointer.downX ? 1 : -1);
     });
 
@@ -167,7 +171,7 @@ export default class MenuScene extends Phaser.Scene {
   layoutCarousel(w, s, top, bottom, minLabel, minBest) {
     const dpr = layout.dpr;
     const dotsH = 14 * dpr;
-    let cw = Math.min(w * 0.84, 560 * dpr);
+    let cw = Math.min(w * 0.78, 560 * dpr);
     const name = Math.max(minLabel * 1.6, Math.round(cw * 0.075));
     const best = Math.max(minBest * 1.4, Math.round(name * 0.58));
     const pad = Math.round(cw * 0.03);
@@ -178,7 +182,7 @@ export default class MenuScene extends Phaser.Scene {
     if (thumbFor(cw) + pad + labelH > maxH) cw = (maxH - pad - labelH) * (192 / 108) + 2 * pad;
     const th = thumbFor(cw);
     const ch = pad + th + labelH;
-    this.carouselGeo = { w, cw, ch, gap: Math.round(cw * 0.06), y: top + Math.max(0, (maxH - ch) / 2) };
+    this.carouselGeo = { w, cw, ch, gap: Math.round(cw * 0.035), y: top + Math.max(0, (maxH - ch) / 2) };
 
     this.cards.forEach((card, i) => {
       card.cardW = cw;
@@ -201,7 +205,11 @@ export default class MenuScene extends Phaser.Scene {
     this.cards.forEach((card, i) => {
       const d = i - this.selected;
       const sc = d === 0 ? 1 : 0.86;
-      const x = g.w / 2 - g.cw / 2 + d * (g.cw + g.gap) + (g.cw * (1 - sc)) / 2;
+      // vizinhos encostados no cartao do meio, aparecendo nas bordas (mostra que da para deslizar)
+      const side = g.cw * sc + g.gap;
+      let x = g.w / 2 - g.cw / 2;
+      if (d > 0) x = g.w / 2 + g.cw / 2 + g.gap + (d - 1) * side;
+      if (d < 0) x = g.w / 2 - g.cw / 2 - g.gap - g.cw * sc + (d + 1) * side;
       const y = g.y + (g.ch * (1 - sc)) / 2;
       const props = { x, y, scaleX: sc, scaleY: sc, alpha: d === 0 ? 1 : Math.abs(d) === 1 ? 0.6 : 0 };
       this.tweens.killTweensOf(card);
