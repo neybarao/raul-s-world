@@ -20,6 +20,16 @@ export const PLAYER = {
 
 export const ENEMY = { speed: 28 * U };
 
+// bolinhas de piscina arremessadas com o botao B (ou X no teclado)
+export const BALL = {
+  speedX: 250 * U, // velocidade para frente (soma metade da velocidade do Raul)
+  speedY: 190 * U, // impulso para cima ao sair da mao
+  bounce: 0.6, // quanto quica no chao
+  lifeMs: 1600, // some depois desse tempo
+  max: 3, // quantas podem estar no ar ao mesmo tempo
+  cooldownMs: 220, // intervalo minimo entre dois arremessos
+};
+
 export const DOG = {
   followGap: 22 * U, // distancia em px que o cachorro mantem do Raul
   sitAfter: 1200,

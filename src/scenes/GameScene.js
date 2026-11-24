@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, U, PLAYER, ENEMY, DOG, VIEW } from '../config.js';
+import { TILE, U, PLAYER, ENEMY, DOG, VIEW, BALL } from '../config.js';
 import { touch, layout, computeLayout } from '../controls.js';
 import { playMusic, setMusicPaused } from '../music.js';
 import { levelById, ENEMIES } from '../levels/index.js';
@@ -35,6 +35,8 @@ export default class GameScene extends Phaser.Scene {
     this.lastGroundedAt = 0;
     this.jumpPressedAt = -9999;
     this.prevJumpHeld = false;
+    this.prevThrowHeld = true; // ignora o B que ainda estiver apertado ao entrar na fase
+    this.lastThrowAt = -9999;
     this.invulnerableUntil = 0;
     this.knockbackUntil = 0;
 
@@ -187,6 +189,11 @@ export default class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.enemies, (_p, e) => this.touchEnemy(e));
     this.physics.add.overlap(this.player, this.flag, () => this.reachFlag());
     this.physics.add.overlap(this.player, this.molas, (_p, m) => this.bounceMola(m));
+
+    // bolinhas arremessadas: quicam no chao e derrubam o inimigo que acertarem
+    this.balls = this.physics.add.group({ allowGravity: true });
+    this.physics.add.collider(this.balls, this.layer);
+    this.physics.add.overlap(this.balls, this.enemies, (b, e) => this.ballHit(b, e));
   }
 
   spawnEnemy(cx, bottom, x) {
@@ -236,7 +243,7 @@ export default class GameScene extends Phaser.Scene {
     const kb = this.input.keyboard;
     this.keys = kb.addKeys({
       left: 'LEFT', right: 'RIGHT', up: 'UP', a: 'A', d: 'D', w: 'W', space: 'SPACE', z: 'Z',
-      shift: 'SHIFT', x: 'X',
+      shift: 'SHIFT', x: 'X', c: 'C',
     });
   }
 
@@ -252,6 +259,7 @@ export default class GameScene extends Phaser.Scene {
       this.updateEnding();
     }
     this.updateEnemies();
+    this.updateBalls(delta);
     this.updateDog(delta);
     if (this.waves) this.drawWaves(time);
     const cam = this.cameras.main;
@@ -266,6 +274,8 @@ export default class GameScene extends Phaser.Scene {
       right: k.right.isDown || k.d.isDown || touch.right,
       jump: k.up.isDown || k.w.isDown || k.space.isDown || k.z.isDown || touch.jump,
       run: k.shift.isDown || k.x.isDown || touch.run,
+      // B (ou X): cada toque arremessa uma bolinha; segurando, o Raul tambem corre
+      throw: k.x.isDown || k.c.isDown || touch.run,
     };
   }
 
@@ -303,6 +313,9 @@ export default class GameScene extends Phaser.Scene {
       body.setVelocityY(-PLAYER.jumpCutVelocity);
     }
     this.prevJumpHeld = input.jump;
+
+    if (input.throw && !this.prevThrowHeld) this.throwBall(time);
+    this.prevThrowHeld = input.throw;
 
     p.setFlipX(this.facing < 0);
     if (time < this.knockbackUntil + 150) p.play('raul-hurt', true);
@@ -425,17 +438,58 @@ export default class GameScene extends Phaser.Scene {
     const p = this.player.body;
     const stomp = p.velocity.y > 0 && p.bottom <= e.body.top + 6 * U;
     if (stomp) {
-      e.dead = true;
-      e.anims.stop();
-      e.setFrame(2);
-      e.body.enable = false;
+      this.killEnemy(e);
       this.player.body.setVelocityY(-PLAYER.stompBounce);
       this.lastGroundedAt = -9999;
-      this.tweens.add({ targets: e, alpha: 0, delay: 350, duration: 250, onComplete: () => e.destroy() });
       this.cameras.main.shake(80, 0.004);
     } else {
       this.hurt(Math.sign(this.player.x - e.x) || 1);
     }
+  }
+
+  // inimigo amassado (pisao ou bolinha): fica achatado um instante e some
+  killEnemy(e) {
+    e.dead = true;
+    e.anims.stop();
+    e.setFrame(2);
+    e.body.enable = false;
+    this.tweens.add({ targets: e, alpha: 0, delay: 350, duration: 250, onComplete: () => e.destroy() });
+  }
+
+  throwBall(time) {
+    if (this.state !== 'playing' || time - this.lastThrowAt < BALL.cooldownMs) return;
+    if (this.balls.countActive() >= BALL.max) return;
+    this.lastThrowAt = time;
+    const p = this.player;
+    const f = this.facing;
+    const ball = this.balls.create(p.x + f * 14 * U, p.y - 28 * U, 'bolinhas', Phaser.Math.Between(0, 5));
+    ball.setDepth(11);
+    ball.body.setCircle(8, 1, 1);
+    ball.setBounce(BALL.bounce);
+    ball.setVelocity(f * BALL.speedX + p.body.velocity.x * 0.5, -BALL.speedY);
+    ball.spin = f;
+    this.time.delayedCall(BALL.lifeMs, () => {
+      if (!ball.active) return;
+      ball.body.enable = false;
+      this.tweens.add({ targets: ball, alpha: 0, duration: 200, onComplete: () => ball.destroy() });
+    });
+  }
+
+  ballHit(ball, e) {
+    if (e.dead || !ball.body.enable) return;
+    this.killEnemy(e);
+    ball.body.enable = false;
+    this.tweens.add({ targets: ball, alpha: 0, scale: 1.6, duration: 160, onComplete: () => ball.destroy() });
+  }
+
+  updateBalls(delta) {
+    this.balls.children.each((b) => {
+      if (!b.active) return;
+      // gira para o lado em que rola; parede faz voltar
+      b.angle += b.spin * delta * 0.6;
+      if (b.body.blocked.left || b.body.blocked.right) b.spin *= -1;
+      if (b.y > this.levelH + 40 * U || b.x < -40 * U || b.x > this.levelW + 40 * U) b.destroy();
+    });
   }
 
   hurt(knockDir = 0) {

@@ -37,8 +37,8 @@ A música de cada fase fica em `src/levels/index.js` (campo `music`). O botão d
 tecla M) liga e desliga o som, e a escolha fica guardada no aparelho. Na pausa o volume abaixa.
 
 ## Controles
-- Computador: setas ou A/D para andar, Espaço/W/↑ para pular, Shift ou X para correr, P ou Esc para pausar, M para ligar/desligar o som
-- Celular: direcional em cruz para andar, A para pular, B (segurar) para correr, START para pausar
+- Computador: setas ou A/D para andar, Espaço/W/↑ para pular, X para arremessar bolinha (segurando, corre também), C só arremessa, Shift só corre, P ou Esc para pausar, M para ligar/desligar o som
+- Celular: direcional em cruz para andar, A para pular, B para arremessar bolinha (segurando, o Raul também corre), START para pausar
 
 ## App (PWA)
 - **Android (Chrome):** menu ⋮ → "Instalar app" ou "Adicionar à tela inicial". Abre em tela cheia.
@@ -85,5 +85,6 @@ desenhados por código (`tools/make_tiles.py`).
 | `sprites/raul.png` | 13 quadros de 64×88 (parado, corrida 1 a 8, pulo, dano, choro 1, choro 2) |
 | `sprites/dog.png` | 13 quadros de 52×40 (parado, sentado, dormindo, corrida 1 a 10) |
 | `sprites/mamae.png` | 4 quadros de 88×112 (agachada 1 e 2, abraçando o Raul 1 e 2) |
+| `bolinhas.png` | 6 quadros de 18×18 (bolinhas de piscina arremessadas com o B; `tools/make_bolinhas.py`) |
 | `enemy.png` | 3 quadros de 32×28 (andando 1, andando 2, amassado) |
 | `tiles.png` | 9 tiles de 32×32, margem 1 e espaçamento 2 |
