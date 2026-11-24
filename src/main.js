@@ -11,7 +11,20 @@ import { musicState } from './music.js';
 // Assim o zoom da camera pode ser um numero inteiro de pixels fisicos e cada pixel da arte
 // fica exatamente do mesmo tamanho, sem distorcer nem tremer.
 const dpr = () => Math.min(window.devicePixelRatio || 1, 4);
-const cssSize = () => ({ w: window.innerWidth, h: window.innerHeight });
+// No iPhone, com o jogo instalado na tela de inicio (barra de status transparente), o
+// window.innerHeight vem menor que a tela (desconta a barra de status) e sobrava uma faixa vazia
+// embaixo. Como app, mede a altura por um elemento de 100vh, que ocupa a tela inteira.
+const standalone = () =>
+  window.navigator.standalone === true ||
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.matchMedia('(display-mode: fullscreen)').matches;
+const probe = document.createElement('div');
+probe.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:100vh;visibility:hidden;pointer-events:none';
+document.body.appendChild(probe);
+const cssSize = () => {
+  const h = standalone() ? Math.max(window.innerHeight, probe.offsetHeight) : window.innerHeight;
+  return { w: window.innerWidth, h };
+};
 
 const { w, h } = cssSize();
 const game = new Phaser.Game({
