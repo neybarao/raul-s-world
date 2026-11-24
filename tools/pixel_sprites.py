@@ -31,6 +31,8 @@ PAL = {
     "F": (244, 244, 244),  # meia
     "N": (214, 40, 40),    # tenis
     "n": (250, 250, 250),  # sola
+    "A": (110, 196, 248),  # lagrima
+    "a": (196, 236, 255),  # lagrima brilho
     # cachorro
     "O": (110, 92, 84),    # contorno do pelo
     "C": (252, 248, 238),  # pelo
@@ -75,6 +77,42 @@ HEAD_HURT = HEAD[:8] + [
     "...KsSSSBSSSSSSSBK..",
     "...KKSSSSSSSKMKSK...",
     ".....KKSSSSSSSSKK...",
+]
+
+# chorando: olhos apertados, boca aberta e lagrimas (2 quadros alternando)
+HEAD_CRY1 = HEAD[:8] + [
+    "..KHsHSSSKKSSSKKSK..",
+    "..KHssSSSSaSSSSaSK..",
+    "...KsSSSBASKKSSABK..",
+    "...KKSSSSASMmKSAK...",
+    ".....KKSSSSKKSSKK...",
+]
+HEAD_CRY2 = HEAD[:8] + [
+    "..KHsHSSSKKSSSKKSK..",
+    "..KHssSSSSASSSSASK..",
+    "...KsSSSBaSKKSSaBK..",
+    "...KKSSSSSAMmKSSAK..",
+    ".....KKSSSASKKSSKA..",
+]
+
+# sentado no chao, pernas esticadas para a frente (7 linhas)
+BODY_SIT = [
+    ".......KKKKKK.......",
+    "......KRRRRRRK......",
+    ".....KSRRRRRRSK.....",
+    ".....KSKRRRRrKSK....",
+    "......KPPPPPPPKKKK..",
+    "......KPPPpPPPSSFNK.",
+    ".......KKKKKKKKKnNK.",
+]
+BODY_SIT2 = [  # ombros sobem no soluco
+    ".......KKKKKK.......",
+    "......KRRRRRRK......",
+    ".....KSRRRRRRSK.....",
+    ".....KSRRRRRRSK.....",
+    "......KPPPPPPPKKKK..",
+    "......KPPPpPPPSSFNK.",
+    ".......KKKKKKKKKnNK.",
 ]
 
 # corpos: 13 linhas (linhas 13 a 25 do quadro)
@@ -196,6 +234,8 @@ def raul_frames():
         frame(HEAD_HAPPY, BODY_JUMP),    # 6 subindo
         frame(HEAD, BODY_FALL),          # 7 caindo
         frame(HEAD_HURT, BODY_FALL),     # 8 dano
+        frame(HEAD_CRY1, BODY_SIT),      # 9 sentado chorando
+        frame(HEAD_CRY2, BODY_SIT2, 1),  # 10
     ]
 
 

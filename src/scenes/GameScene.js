@@ -153,13 +153,15 @@ export default class GameScene extends Phaser.Scene {
   layoutCamera() {
     const L = computeLayout(this.game);
     const viewH = L.height - L.controlsHeight;
-    const zoom = L.portrait
+    const ideal = L.portrait
       ? L.width / (VIEW.portraitTilesWide * TILE)
       : viewH / (VIEW.landscapeTilesHigh * TILE);
+    // zoom inteiro: cada pixel da arte vira um bloco exato de pixels da tela
+    const zoom = Math.max(1, Math.round(ideal));
     const cam = this.cameras.main;
     cam.setViewport(0, 0, L.width, viewH);
-    cam.setZoom(Math.max(1, zoom));
-    this.lookAhead = L.portrait ? 40 : 28;
+    cam.setZoom(zoom);
+    this.lookAhead = L.portrait ? 36 : 28;
     this.game.events.emit('layout');
   }
 
@@ -177,6 +179,8 @@ export default class GameScene extends Phaser.Scene {
     if (this.state === 'playing') {
       this.updatePlayer(time, delta);
       this.checkFall();
+    } else if (this.state === 'over') {
+      this.updateCrying();
     }
     this.updateEnemies();
     this.updateDog(delta);
@@ -330,6 +334,7 @@ export default class GameScene extends Phaser.Scene {
     this.emitHud();
     if (this.hearts <= 0) {
       this.gameOver();
+      if (knockDir) this.player.body.setVelocity(knockDir * 60, -120);
       return true;
     }
     this.invulnerableUntil = this.time.now + PLAYER.invulnerableMs;
@@ -350,7 +355,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.player.y < this.levelH + 24) return;
     this.invulnerableUntil = 0;
     this.hurt();
-    if (this.state !== 'playing') return;
+    // volta para o ultimo ponto seguro; se acabaram os coracoes, ele chora la
     const r = this.respawnPoint;
     this.player.body.reset(r.x, r.y);
     this.dog.setPosition(r.x - DOG.followGap, r.y);
@@ -372,11 +377,24 @@ export default class GameScene extends Phaser.Scene {
     return this.rows.join('').split('o').length - 1;
   }
 
+  // Sem morte: quando acabam os coracoes, o Raul senta no chao e chora.
   gameOver() {
     this.state = 'over';
-    this.player.body.setVelocity(0, -260);
-    this.player.body.checkCollision.none = true;
+    this.cryStarted = false;
+    this.tweens.killTweensOf(this.player);
+    this.player.setAlpha(1);
     this.player.play('raul-hurt');
+  }
+
+  updateCrying() {
+    const p = this.player;
+    const body = p.body;
+    if (this.cryStarted) return;
+    body.setVelocityX(body.velocity.x * 0.85);
+    if (!body.blocked.down) return; // espera tocar o chao
+    this.cryStarted = true;
+    body.setVelocityX(0);
+    p.play('raul-cry');
     this.game.events.emit('game-over');
   }
 

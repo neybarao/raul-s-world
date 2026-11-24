@@ -33,6 +33,7 @@ export default class BootScene extends Phaser.Scene {
     a.create({ key: 'raul-jump', frames: f('raul', [6]) });
     a.create({ key: 'raul-fall', frames: f('raul', [7]) });
     a.create({ key: 'raul-hurt', frames: f('raul', [8]) });
+    a.create({ key: 'raul-cry', frames: f('raul', [9, 10]), frameRate: 3, repeat: -1 });
     a.create({ key: 'dog-run', frames: f('dog', [0, 1]), frameRate: 9, repeat: -1 });
     a.create({ key: 'dog-stand', frames: f('dog', [2]) });
     a.create({ key: 'dog-sit', frames: f('dog', [3]) });

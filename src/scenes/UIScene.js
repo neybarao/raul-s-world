@@ -31,7 +31,7 @@ export default class UIScene extends Phaser.Scene {
     const onHud = (h) => { this.hud = h; this.drawHud(); };
     const onLayout = () => this.relayout();
     const onWin = (d) => this.showOverlay('Fase completa!', `Moedas: ${d.coins} de ${d.total}`, 'Toque para jogar de novo');
-    const onOver = () => this.time.delayedCall(700, () => this.showOverlay('Ops!', 'O Raul ficou sem corações', 'Toque para tentar de novo'));
+    const onOver = () => this.time.delayedCall(1800, () => this.showOverlay('Ai, ai, ai!', 'O Raul se machucou', 'Toque para tentar de novo', { light: true }));
     ev.on('hud', onHud);
     ev.on('layout', onLayout);
     ev.on('level-complete', onWin);
@@ -51,7 +51,7 @@ export default class UIScene extends Phaser.Scene {
 
   // escala inteira para os elementos em pixel art continuarem nitidos
   get s() {
-    return Phaser.Math.Clamp(Math.floor(Math.min(layout.width, layout.height) / 200), 2, 4);
+    return Phaser.Math.Clamp(Math.floor(Math.min(layout.width, layout.height) / 200), 2, 12);
   }
 
   relayout() {
@@ -82,8 +82,9 @@ export default class UIScene extends Phaser.Scene {
     this.pauseBtn.clear()
       .fillStyle(0x1b1b2a, 0.75).fillRoundedRect(right - pb, m, pb, pb, 3 * s)
       .fillStyle(0xffffff, 1).fillRect(right - pb + 4 * s, m + 3 * s, 2 * s, 8 * s).fillRect(right - pb + 8 * s, m + 3 * s, 2 * s, 8 * s);
-    this.pauseZone.setPosition(right - pb - 8, m - 8).setSize(pb + 16, pb + 16);
-    if (this.pauseZone.input) this.pauseZone.input.hitArea.setSize(pb + 16, pb + 16);
+    const pad = 8 * layout.dpr;
+    this.pauseZone.setPosition(right - pb - pad, m - pad).setSize(pb + 2 * pad, pb + 2 * pad);
+    if (this.pauseZone.input) this.pauseZone.input.hitArea.setSize(pb + 2 * pad, pb + 2 * pad);
 
     this.coinIcon.setScale(s * 0.8).setPosition(right - pb - 60 * s, m + pb / 2);
     this.coinText.setFontSize(9 * s).setStroke('#1b1b2a', s * 1.5).setPosition(right - pb - 50 * s, m + pb / 2).setText(`x ${this.hud.coins}`);
@@ -106,10 +107,10 @@ export default class UIScene extends Phaser.Scene {
       this.pad = { x: w * 0.25, y: cy, size };
       this.btns.push({ id: 'run', label: 'B', x: w * 0.67, y: cy + r * 0.55, r });
       this.btns.push({ id: 'jump', label: 'A', x: w * 0.86, y: cy - r * 0.55, r });
-      this.start = { x: w * 0.5, y: top + ch * 0.86, w: Math.min(w * 0.16, 70), h: Math.max(10, ch * 0.055) };
+      this.start = { x: w * 0.5, y: top + ch * 0.86, w: Math.min(w * 0.16, 70 * layout.dpr), h: Math.max(10 * layout.dpr, ch * 0.055) };
     } else {
-      const size = Math.min(h * 0.13, 80);
-      const r = Math.min(h * 0.075, 46);
+      const size = Math.min(h * 0.13, 80 * layout.dpr);
+      const r = Math.min(h * 0.075, 46 * layout.dpr);
       const cy = h - size * 1.45;
       this.pad = { x: size * 1.5, y: cy, size };
       this.btns.push({ id: 'run', label: 'B', x: w - r * 4.6, y: cy + r * 0.6, r });
@@ -128,17 +129,18 @@ export default class UIScene extends Phaser.Scene {
     if (!this.pad) return;
     const solid = portrait;
     const a = solid ? 1 : 0.4;
+    const u = layout.dpr;
 
     if (portrait) {
       // corpo do console
       const top = h - ch;
-      this.panel.fillStyle(0x16162a, 1).fillRect(0, top, w, 6);
-      this.panel.fillStyle(0xcfcabd, 1).fillRect(0, top + 6, w, ch - 6);
-      this.panel.fillStyle(0xe2ddd1, 1).fillRect(0, top + 6, w, 3);
+      this.panel.fillStyle(0x16162a, 1).fillRect(0, top, w, 6 * u);
+      this.panel.fillStyle(0xcfcabd, 1).fillRect(0, top + 6 * u, w, ch - 6 * u);
+      this.panel.fillStyle(0xe2ddd1, 1).fillRect(0, top + 6 * u, w, 3 * u);
       // grade do alto-falante
       for (let i = 0; i < 5; i++) {
-        const x = w - 24 - i * 9;
-        this.panel.fillStyle(0xa9a394, 1).fillRoundedRect(x, h - ch * 0.22, 4, ch * 0.16, 2);
+        const x = w - (24 + i * 9) * u;
+        this.panel.fillStyle(0xa9a394, 1).fillRoundedRect(x, h - ch * 0.22, 4 * u, ch * 0.16, 2 * u);
       }
     }
 
@@ -147,14 +149,14 @@ export default class UIScene extends Phaser.Scene {
     const arm = size * 0.66;
     const shadow = Math.max(2, size * 0.06);
     g.fillStyle(0x000000, solid ? 0.25 : 0.15)
-      .fillRoundedRect(x - size + shadow, y - arm / 2 + shadow, size * 2, arm, 4)
-      .fillRoundedRect(x - arm / 2 + shadow, y - size + shadow, arm, size * 2, 4);
+      .fillRoundedRect(x - size + shadow, y - arm / 2 + shadow, size * 2, arm, 4 * u)
+      .fillRoundedRect(x - arm / 2 + shadow, y - size + shadow, arm, size * 2, 4 * u);
     g.fillStyle(0x2b2b30, a)
-      .fillRoundedRect(x - size, y - arm / 2, size * 2, arm, 4)
-      .fillRoundedRect(x - arm / 2, y - size, arm, size * 2, 4);
+      .fillRoundedRect(x - size, y - arm / 2, size * 2, arm, 4 * u)
+      .fillRoundedRect(x - arm / 2, y - size, arm, size * 2, 4 * u);
     const lit = 0x55555e;
-    if (touch.left) g.fillStyle(lit, a).fillRoundedRect(x - size, y - arm / 2, size - arm / 2, arm, 4);
-    if (touch.right) g.fillStyle(lit, a).fillRoundedRect(x + arm / 2, y - arm / 2, size - arm / 2, arm, 4);
+    if (touch.left) g.fillStyle(lit, a).fillRoundedRect(x - size, y - arm / 2, size - arm / 2, arm, 4 * u);
+    if (touch.right) g.fillStyle(lit, a).fillRoundedRect(x + arm / 2, y - arm / 2, size - arm / 2, arm, 4 * u);
     g.fillStyle(0x1e1e22, a).fillCircle(x, y, arm * 0.28);
     const t = arm * 0.22;
     const tri = 0x6b6b74;
@@ -175,7 +177,7 @@ export default class UIScene extends Phaser.Scene {
       const lbl = this.labels[li++];
       lbl.setText(b.label).setFontSize(Math.round(b.r * 0.62)).setVisible(true).setAlpha(solid ? 1 : 0.6)
         .setPosition(b.x + (portrait ? b.r * 0.9 : 0), b.y + (portrait ? b.r * 1.15 : 0))
-        .setColor(portrait ? '#2b2a6b' : '#ffffff').setStroke(portrait ? '#cfcabd' : '#1b1b2a', portrait ? 0 : 3);
+        .setColor(portrait ? '#2b2a6b' : '#ffffff').setStroke(portrait ? '#cfcabd' : '#1b1b2a', portrait ? 0 : 3 * u);
     }
 
     // START (pausa)
@@ -183,10 +185,10 @@ export default class UIScene extends Phaser.Scene {
       const st = this.start;
       g.fillStyle(0x8f8a7e, 1).fillRoundedRect(st.x - st.w / 2, st.y - st.h / 2, st.w, st.h, st.h / 2);
       const lbl = this.labels[li++];
-      lbl.setText('START').setFontSize(Math.round(Math.max(9, st.h * 0.95))).setVisible(true).setAlpha(1)
+      lbl.setText('START').setFontSize(Math.round(Math.max(9 * u, st.h * 0.95))).setVisible(true).setAlpha(1)
         .setPosition(st.x, st.y + st.h * 1.3).setColor('#2b2a6b').setStroke('#cfcabd', 0);
-      this.startZone.setVisible(true).setPosition(st.x - st.w / 2 - 10, st.y - st.h / 2 - 12).setSize(st.w + 20, st.h + 30);
-      this.startZone.input.hitArea.setSize(st.w + 20, st.h + 30);
+      this.startZone.setVisible(true).setPosition(st.x - st.w / 2 - 10 * u, st.y - st.h / 2 - 12 * u).setSize(st.w + 20 * u, st.h + 30 * u);
+      this.startZone.input.hitArea.setSize(st.w + 20 * u, st.h + 30 * u);
       this.startZone.input.enabled = true;
     }
   }
@@ -233,10 +235,11 @@ export default class UIScene extends Phaser.Scene {
     }
   }
 
-  showOverlay(title, subtitle, hint) {
+  showOverlay(title, subtitle, hint, opts = {}) {
     this.hideOverlay();
     const o = this.add.container(0, 0).setDepth(100);
-    o.bg = this.add.rectangle(0, 0, 10, 10, 0x11111c, 0.72).setOrigin(0, 0).setInteractive();
+    o.bg = this.add.rectangle(0, 0, 10, 10, 0x11111c, opts.light ? 0.3 : 0.72).setOrigin(0, 0).setInteractive();
+    o.light = !!opts.light;
     o.title = this.add.text(0, 0, title, FONT).setOrigin(0.5);
     o.sub = this.add.text(0, 0, subtitle, FONT).setOrigin(0.5);
     o.hint = this.add.text(0, 0, hint, { ...FONT, color: '#ffd23f' }).setOrigin(0.5);
@@ -253,9 +256,11 @@ export default class UIScene extends Phaser.Scene {
     const { width: w, height: h } = layout;
     o.bg.setSize(w, h);
     o.bg.input.hitArea.setSize(w, h);
-    o.title.setFontSize(16 * s).setStroke('#1b1b2a', 2 * s).setPosition(w / 2, h * 0.38);
-    o.sub.setFontSize(8 * s).setStroke('#1b1b2a', s).setPosition(w / 2, h * 0.38 + 18 * s);
-    o.hint.setFontSize(7 * s).setStroke('#1b1b2a', s).setPosition(w / 2, h * 0.38 + 34 * s);
+    // na tela de choro o texto fica no alto, para ver o Raul sentado
+    const ty = o.light ? h * 0.16 : h * 0.38;
+    o.title.setFontSize(16 * s).setStroke('#1b1b2a', 2 * s).setPosition(w / 2, ty);
+    o.sub.setFontSize(8 * s).setStroke('#1b1b2a', s).setPosition(w / 2, ty + 18 * s);
+    o.hint.setFontSize(7 * s).setStroke('#1b1b2a', s).setPosition(w / 2, ty + 34 * s);
   }
 
   hideOverlay() {
