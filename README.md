@@ -63,6 +63,7 @@ Cada push na `main` publica no GitHub Pages pelo workflow `.github/workflows/dep
 ## Estrutura
 - `src/config.js`: números de jogabilidade (velocidade, pulo, dano, cachorro, zoom)
 - `src/levels/*.js`: as fases desenhadas em texto (`#` chão, `=` plataforma, `o` moeda, `e` inimigo, `T` mola, `P` início, `F` bandeira), geradas por `tools/build_levels.py`
+- `tools/check_levels.py`: confere se todas as fases dá pra terminar só andando (sem correr) e com um pulo 10% mais fraco que o real. Rode `python3 tools/check_levels.py` depois de mexer em qualquer fase; ele avisa a coluna onde fica impossível.
 - `src/scenes/GameScene.js`: física, Raul, cachorro, inimigos, câmera
 - `src/scenes/MenuScene.js`: seletor de fases
 - `src/scenes/UIScene.js`: HUD, botões de toque, pausa e mensagens
