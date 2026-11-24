@@ -26,7 +26,8 @@ export default class MenuScene extends Phaser.Scene {
     this.cards = [];
 
     this.bg = this.add.graphics();
-    this.title = this.add.text(0, 0, "Raul's World", { ...FONT, color: '#ffd23f' }).setOrigin(0.5);
+    // logo gerada no Magnific e convertida em pixel art (tools/make_logo.py)
+    this.logo = this.add.image(0, 0, 'logo').setOrigin(0.5, 0);
     this.subtitle = this.add.text(0, 0, 'Escolha a fase', FONT).setOrigin(0.5);
     this.raul = this.add.sprite(0, 0, 'raul', 0).setOrigin(0.5, 1).play('raul-run');
     this.dog = this.add.sprite(0, 0, 'dog', 0).setOrigin(0.5, 1).play('dog-run');
@@ -86,12 +87,19 @@ export default class MenuScene extends Phaser.Scene {
     this.bg.fillStyle(0x4caf50, 1).fillRect(0, areaH - 10 * s, w, 10 * s);
     this.bg.fillStyle(0x8a5a32, 1).fillRect(0, areaH - 6 * s, w, 6 * s);
 
-    const top = safeTop + 8 * s;
-    this.title.setFontSize(18 * s).setStroke('#1b1b2a', 3 * s).setPosition(w / 2, top + 10 * s);
-    this.subtitle.setFontSize(7 * s).setStroke('#1b1b2a', 2 * s).setPosition(w / 2, top + 26 * s);
+    const top = safeTop + 6 * s;
+    // logo em escala inteira (pixels nitidos), no maximo 70% da largura e 30% da altura
+    const src = this.textures.get('logo').getSourceImage();
+    const lk = Math.max(1, Math.floor(Math.min((w * 0.7) / src.width, (areaH * 0.3) / src.height)));
+    this.tweens.killTweensOf(this.logo);
+    this.logo.setScale(lk).setPosition(w / 2, top);
+    // flutua de leve, 2 pixels da arte
+    this.tweens.add({ targets: this.logo, y: top + 2 * lk, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    const logoBottom = top + src.height * lk;
+    this.subtitle.setFontSize(7 * s).setStroke('#1b1b2a', 2 * s).setPosition(w / 2, logoBottom + 8 * s);
 
     // grade de cartoes
-    const gridTop = top + 36 * s;
+    const gridTop = logoBottom + 16 * s;
     const gridBottom = areaH - 26 * s;
     const gap = 6 * s;
     const cardW = Math.min((w - gap * (this.cols + 1)) / this.cols, 120 * s);

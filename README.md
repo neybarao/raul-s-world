@@ -26,6 +26,12 @@ cores das fotos de férias da família (só as paletas foram enviadas, não as f
 em `tools/build_levels.py`; a lista de fases e o visual de cada uma em `src/levels/index.js`.
 Legenda extra do mapa: `T` = mola. O recorde de moedas de cada fase fica guardado no aparelho.
 
+## Logo
+"RAUL / AVENTUREIRO" no topo do seletor de fases. Gerada no Magnific (GPT 2.6) sobre fundo verde
+(`art/concept/logo-source.jpg`) e convertida em pixel art de verdade por `tools/make_logo.py`
+(tira o fundo, reduz pelo tamanho do pixel da arte e limita a paleta). Saída: `public/assets/logo.png`
+(146×68), ampliada em escala inteira no menu.
+
 ## Música
 Trilhas chiptune originais geradas no Magnific (Google Lyria 3), recortadas em compassos inteiros
 para repetir sem emenda (originais em `art/music/`, versões do jogo em `public/assets/music/`):
