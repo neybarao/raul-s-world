@@ -43,8 +43,12 @@ RAUL_FRAME = (32 * U, 44 * U)
 DOG_FRAME = (26 * U, 20 * U)
 RAUL_COLORS = 64
 DOG_COLORS = 32
-RUN_SHEET = ROOT / "art/concept/run-cycle.jpg"  # ciclo de corrida gerado no Magnific (GPT 2.6), 4x2
-RUN_GRID = (4, 2)
+# ciclo de corrida: quadros de um video do Raul correndo no lugar (Magnific, Seedance 2.0 Mini),
+# numa folha 4x4 com legenda de tempo embaixo de cada quadro; um ciclo = os 8 primeiros
+RUN_SHEET = ROOT / "art/concept/run-cycle-video.jpg"
+RUN_GRID = (4, 4)
+RUN_CELL_IMG_H = 338   # altura da imagem em cada celula (o resto e a legenda)
+RUN_FRAMES = 8
 COIN = (985, 825, 1055, 925)
 FLAG = (1366, 740, 1505, 975)
 
@@ -56,7 +60,7 @@ def is_bg(px):
     if min(r, g, b) > 150 and (max(r, g, b) - min(r, g, b)) < 40:
         return True  # fundo creme
     # sombra cinza embaixo dos pes: sem cor e de brilho medio (contorno e mais escuro, meia e mais clara)
-    return (max(r, g, b) - min(r, g, b)) < 18 and 95 < (r + g + b) / 3 < 215
+    return (max(r, g, b) - min(r, g, b)) < 30 and 90 < (r + g + b) / 3 < 225
 
 
 def cut(sheet, box):
@@ -182,41 +186,90 @@ def outline(img):
     return out
 
 
-def place(frames, fw, fh, lift=None):
-    """Monta a tira de quadros alinhada pelo chao; lift[i] sobe o quadro i (pulo dentro da corrida)."""
+def place(frames, fw, fh, lift=None, anchor=None):
+    """Monta a tira de quadros alinhada pelo chao.
+    lift[i] sobe o quadro i (voo dentro da corrida); anchor[i] e o x (dentro do quadro i) que deve
+    ficar no centro, para a cabeca nao tremer de um quadro para o outro."""
     sheet = Image.new("RGBA", (fw * len(frames), fh), (0, 0, 0, 0))
     for i, f in enumerate(frames):
         up = (lift or {}).get(i, 0)
+        x = fw // 2 - round(anchor[i]) if anchor and i in anchor else (fw - f.width) // 2
+        x = max(0, min(fw - f.width, x))
         assert f.width <= fw and f.height + up <= fh, (i, f.size, up)
-        sheet.alpha_composite(f, (i * fw + (fw - f.width) // 2, fh - f.height - up))
+        sheet.alpha_composite(f, (i * fw + x, fh - f.height - up))
     return sheet
 
 
 def run_cycle():
-    """Recorta os 8 quadros da corrida e guarda quanto cada um esta acima do chao da sua linha."""
+    """Recorta os quadros da corrida; devolve o desenho, a altura acima do chao e o centro da cabeca."""
     img = Image.open(RUN_SHEET).convert("RGBA")
     cols, rows = RUN_GRID
     cw, ch = img.width // cols, img.height // rows
-    frames, bottoms = [], []
-    for r in range(rows):
-        row_frames = []
-        for c in range(cols):
-            cell = img.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch))
-            # acha onde o desenho termina dentro da celula antes de recortar
-            mask = cut_img(cell)
-            full = cell.convert("RGBA")
-            bbox_bottom = None
-            px = full.load()
-            for y in range(ch - 1, -1, -1):
-                if any(not is_bg(px[x, y]) for x in range(cw)):
-                    bbox_bottom = y
-                    break
-            row_frames.append((mask, bbox_bottom))
-        ground = max(b for _, b in row_frames)
-        for m, b in row_frames:
-            frames.append(m)
-            bottoms.append(ground - b)
-    return frames, bottoms
+    raw = []
+    for i in range(RUN_FRAMES):
+        r, c = divmod(i, cols)
+        cell = img.crop((c * cw + 4, r * ch + 4, (c + 1) * cw - 4, r * ch + RUN_CELL_IMG_H - 4))
+        fig = cut_img(cell)
+        # posicao do desenho dentro da celula (camera parada: serve de referencia comum)
+        rgba = cell.convert("RGBA")
+        mask = Image.new("L", cell.size, 0)
+        full = cut_img_keep_pos(rgba)
+        box = full.getbbox()
+        head = full.crop((box[0], box[1], box[2], box[1] + int((box[3] - box[1]) * 0.35))).getbbox()
+        head_cx = box[0] + (head[0] + head[2]) / 2
+        raw.append((fig, box[3], head_cx - box[0]))
+    ground = max(b for _, b, _ in raw)
+    frames = [f for f, _, _ in raw]
+    lifts = [ground - b for _, b, _ in raw]
+    heads = [h for _, _, h in raw]
+    return frames, lifts, heads
+
+
+def cut_img_keep_pos(img):
+    """Como cut_img, mas sem recortar: o desenho fica na mesma posicao da imagem original."""
+    w, h = img.size
+    out = img.copy()
+    px = out.load()
+    seen = set()
+    q = deque([(x, y) for x in range(w) for y in (0, h - 1)] + [(x, y) for y in range(h) for x in (0, w - 1)])
+    while q:
+        x, y = q.popleft()
+        if (x, y) in seen or not (0 <= x < w and 0 <= y < h):
+            continue
+        seen.add((x, y))
+        if not is_bg(px[x, y]):
+            continue
+        px[x, y] = (0, 0, 0, 0)
+        q.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+    blob = keep_main_blob(out.copy())
+    return out if blob is None else _restore_pos(out)
+
+
+def _restore_pos(img, min_ratio=0.03):
+    """Apaga manchas soltas mantendo o tamanho e a posicao da imagem."""
+    w, h = img.size
+    px = img.load()
+    seen, blobs = set(), []
+    for sy in range(h):
+        for sx in range(w):
+            if (sx, sy) in seen or px[sx, sy][3] == 0:
+                continue
+            blob, q = [], deque([(sx, sy)])
+            seen.add((sx, sy))
+            while q:
+                x, y = q.popleft()
+                blob.append((x, y))
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in seen and px[nx, ny][3]:
+                        seen.add((nx, ny))
+                        q.append((nx, ny))
+            blobs.append(blob)
+    biggest = max(len(b) for b in blobs)
+    for b in blobs:
+        if len(b) < biggest * min_ratio:
+            for x, y in b:
+                px[x, y] = (0, 0, 0, 0)
+    return img
 
 
 # ---------- poses montadas ----------
@@ -292,10 +345,11 @@ def main():
     raul_full["cry2"] = sitting(sheet, raul_full["idle"].width, 1)
 
     # corrida: 8 quadros, na mesma altura do Raul parado (o mais alto da corrida = 66 px)
-    run_full, run_lift = run_cycle()
+    run_full, run_lift, run_head = run_cycle()
     run_scale = 66 / max(f.height for f in run_full)
     run_small = [shrink(f, run_scale) for f in run_full]
     lift = {1 + i: round(l * run_scale) for i, l in enumerate(run_lift)}
+    anchor = {1 + i: h * run_scale for i, h in enumerate(run_head)}
 
     order = ["idle", "jump", "hurt", "cry1", "cry2"]
     small = [shrink(raul_full[k], RAUL_SCALE) for k in order]
@@ -303,7 +357,7 @@ def main():
     pal = build_palette(small, RAUL_COLORS)
     frames = [outline(apply_palette(s, pal)) for s in small]
     # ordem final: 0 parado, 1-8 corrida, 9 pulo, 10 dano, 11 choro1, 12 choro2
-    place(frames, *RAUL_FRAME, lift=lift).save(OUT / "raul.png")
+    place(frames, *RAUL_FRAME, lift=lift, anchor=anchor).save(OUT / "raul.png")
     print("raul", [f.size for f in frames])
 
     dog_small = [shrink(cut(sheet, DOG[k]), DOG_SCALE) for k in ("walk", "run", "sit", "sleep")]
