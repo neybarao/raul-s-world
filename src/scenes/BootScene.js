@@ -19,10 +19,12 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('dog', asset('sprites/dog.png'), { frameWidth: 52, frameHeight: 40 });
     this.load.spritesheet('enemy', asset('enemy.png'), { frameWidth: 32, frameHeight: 28 });
     this.load.spritesheet('hearts', asset('hearts.png'), { frameWidth: 18, frameHeight: 16 });
-    this.load.image('raul-face', asset('sprites/raul-face.png'));
+    this.load.spritesheet('raul-faces', asset('sprites/raul-faces.png'), { frameWidth: 56, frameHeight: 56 });
     // musicas (geradas no Magnific)
     for (const m of ['menu', 'ar-livre', 'quartel']) this.load.audio(`musica-${m}`, asset(`music/${m}.mp3`));
     this.load.image('coin', asset('sprites/coin.png'));
+    this.load.spritesheet('hud-buttons', asset('hud-buttons.png'), { frameWidth: 30, frameHeight: 30 });
+    this.load.spritesheet('hud-counter', asset('hud-counter.png'), { frameWidth: 12, frameHeight: 12 });
     this.load.image('logo', asset('logo.png'));
     this.load.spritesheet('bolinhas', asset('bolinhas.png'), { frameWidth: 18, frameHeight: 18 });
     this.load.spritesheet('mamae', asset('sprites/mamae.png'), { frameWidth: 88, frameHeight: 112 });

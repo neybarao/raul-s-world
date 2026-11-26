@@ -2,6 +2,22 @@ import Phaser from 'phaser';
 import { touch, layout, computeLayout } from '../controls.js';
 import { isMuted, toggleMute, setMusicPaused } from '../music.js';
 
+// Expressoes do retrato (quadros de raul-faces.png, gerado por tools/make_faces.py)
+const FACE = { feliz: 0, rindo: 1, surpreso: 2, piscando: 3, triste: 4 };
+// reacao a cada evento do jogo: expressao, duracao (ms, 0 = fica) e prioridade
+const REACTIONS = {
+  coin: { face: 'rindo', ms: 450, pri: 1 },
+  mola: { face: 'surpreso', ms: 650, pri: 1 },
+  throw: { face: 'piscando', ms: 400, pri: 1 },
+  enemy: { face: 'piscando', ms: 800, pri: 2 },
+  hurt: { face: 'triste', ms: 1400, pri: 3 },
+  win: { face: 'rindo', ms: 0, pri: 4 },
+  over: { face: 'triste', ms: 0, pri: 4 },
+};
+
+// quadros de hud-counter.png (gerado por tools/make_hud_icons.py): 0-9, "x" e a moedinha
+const COUNTER = { x: 10, coin: 11 };
+
 const FONT = { fontFamily: '"Courier New", monospace', fontStyle: 'bold', color: '#ffffff', stroke: '#1b1b2a' };
 
 export default class UIScene extends Phaser.Scene {
@@ -17,16 +33,20 @@ export default class UIScene extends Phaser.Scene {
 
     this.panel = this.add.graphics();
     this.buttons = this.add.graphics();
-    this.face = this.add.image(0, 0, 'raul-face').setOrigin(0, 0);
-    this.faceFrame = this.add.graphics();
+    this.face = this.add.image(0, 0, 'raul-faces', FACE.feliz).setOrigin(0, 0);
+    this.faceState = { face: 'feliz', pri: 0, until: 0, timer: null };
+    this.faceHop = { x: 0, y: 0 };
     this.heartImgs = [];
-    this.coinIcon = this.add.image(0, 0, 'coin').setOrigin(0, 0.5);
-    this.coinText = this.add.text(0, 0, 'x 0', FONT).setOrigin(0, 0.5);
-    this.pauseBtn = this.add.graphics();
+    // contador de moedas: moedinha + "x" + numeros, tudo em pixel art (hud-counter.png)
+    this.coinPill = this.add.graphics();
+    this.coinIcon = this.add.image(0, 0, 'hud-counter', COUNTER.coin).setOrigin(0, 0);
+    this.coinDigits = [];
+    // botoes com icones da biblioteca Pixelarticons (hud-buttons.png)
+    this.pauseBtn = this.add.image(0, 0, 'hud-buttons', 0).setOrigin(0, 0);
     this.pauseZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
     this.pauseZone.on('pointerdown', () => this.togglePause());
     // botao de som (liga/desliga a musica), aparece no menu e no jogo
-    this.soundBtn = this.add.graphics();
+    this.soundBtn = this.add.image(0, 0, 'hud-buttons', 1).setOrigin(0, 0);
     this.soundZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
     this.soundZone.on('pointerdown', () => { toggleMute(); this.drawHud(); });
     this.labels = [0, 1, 2].map(() => this.add.text(0, 0, '', FONT).setOrigin(0.5).setVisible(false));
@@ -38,14 +58,16 @@ export default class UIScene extends Phaser.Scene {
     const onLayout = () => this.relayout();
     const onWin = (d) => this.showOverlay('Fase completa!', `Moedas: ${d.coins} de ${d.total}`, 'Toque para escolher outra fase', { kind: 'win', light: true });
     const onOver = () => this.time.delayedCall(1800, () => this.mode === 'game' && this.showOverlay('Ai, ai, ai!', 'O Raul se machucou', 'Toque para tentar de novo', { light: true, menu: true }));
-    const onMode = (m) => { this.mode = m; this.paused = false; this.hideOverlay(); this.drawHud(); };
+    const onMode = (m) => { this.mode = m; this.paused = false; this.hideOverlay(); this.resetFace(); this.drawHud(); };
+    const onFace = (kind) => this.react(kind);
+    ev.on('face', onFace);
     ev.on('hud', onHud);
     ev.on('layout', onLayout);
     ev.on('level-complete', onWin);
     ev.on('game-over', onOver);
     ev.on('mode', onMode);
     this.events.once('shutdown', () => {
-      ev.off('hud', onHud); ev.off('layout', onLayout); ev.off('level-complete', onWin); ev.off('game-over', onOver); ev.off('mode', onMode);
+      ev.off('hud', onHud); ev.off('layout', onLayout); ev.off('level-complete', onWin); ev.off('game-over', onOver); ev.off('mode', onMode); ev.off('face', onFace);
     });
 
     const kb = this.input.keyboard;
@@ -78,58 +100,122 @@ export default class UIScene extends Phaser.Scene {
     if (!this.face) return;
     // no seletor de fases o HUD some
     const show = this.mode !== 'menu';
-    [this.face, this.faceFrame, this.coinIcon, this.coinText, this.pauseBtn, ...this.heartImgs].forEach((o) => o.setVisible(show));
+    [this.face, this.coinPill, this.coinIcon, this.pauseBtn, ...this.heartImgs, ...this.coinDigits].forEach((o) => o.setVisible(show));
     if (this.pauseZone.input) this.pauseZone.input.enabled = show;
     const s = this.s;
     const m = 6 * s;
-    const top0 = layout.safeTop;
-    // som: no jogo fica a esquerda da pausa; no menu, no canto
-    const pbs = 14 * s;
-    const sx = layout.width - m - pbs - (show ? pbs + 4 * s : 0);
-    this.drawSoundButton(sx, m + top0, pbs, s);
+    // no iPhone o sistema embaca uma faixa abaixo do relogio: o HUD desce um pouco mais
+    const top0 = layout.safeTop + (layout.safeTop > 0 ? 12 * layout.dpr : 0);
+    const top = m + top0;
+    const right = layout.width - m;
+
+    // botoes de som e pausa no canto direito (som a esquerda da pausa; no menu so o som)
+    const bs = this.buttonScale;
+    const bw = 30 * bs;
+    const gap = 3 * bs;
+    const pauseX = right - bw;
+    const soundX = show ? pauseX - gap - bw : right - bw;
+    this.soundBtn.setScale(bs).setPosition(soundX, top).setFrame(isMuted() ? 2 : 1);
+    this.pauseBtn.setScale(bs).setPosition(pauseX, top);
+    this.placeZone(this.soundZone, soundX, top, bw);
+    this.placeZone(this.pauseZone, pauseX, top, bw);
     if (!show) return;
-    // a arte do HUD tem o dobro de resolucao (escala 32 bits), por isso metade da escala
-    const hs = s / 2;
-    this.face.setScale(hs).setPosition(m, m + top0);
+
+    // retrato, coracoes e moedas no mesmo tamanho de pixel (escala inteira, fica nitido)
+    const k = this.hudScale;
+    const fx = m;
+    const fy = top;
+    this.faceBase = { x: fx, y: fy, k };
+    this.face.setScale(k).setPosition(fx + this.faceHop.x, fy + this.faceHop.y);
     const fw = this.face.displayWidth;
     const fh = this.face.displayHeight;
-    this.faceFrame.clear().lineStyle(s, 0xffffff, 1).strokeRect(m - s, m - s + top0, fw + 2 * s, fh + 2 * s);
+    const col = fx + fw + 4 * k;
 
+    // coracoes na parte de cima, ao lado do retrato
     while (this.heartImgs.length < this.hud.max) this.heartImgs.push(this.add.image(0, 0, 'hearts', 0).setOrigin(0, 0));
+    const heartsY = fy + 9 * k;
     this.heartImgs.forEach((h, i) => {
-      h.setScale(hs).setPosition(m + fw + 4 * s + i * 10 * s, m + 2 * s + top0).setFrame(i < this.hud.hearts ? 0 : 1);
+      h.setScale(k).setPosition(col + i * 20 * k, heartsY).setFrame(i < this.hud.hearts ? 0 : 1);
     });
 
-    const right = layout.width - m;
-    const pb = 14 * s;
-    this.pauseBtn.clear()
-      .fillStyle(0x1b1b2a, 0.75).fillRoundedRect(right - pb, m + top0, pb, pb, 3 * s)
-      .fillStyle(0xffffff, 1).fillRect(right - pb + 4 * s, m + top0 + 3 * s, 2 * s, 8 * s).fillRect(right - pb + 8 * s, m + top0 + 3 * s, 2 * s, 8 * s);
-    const pad = 8 * layout.dpr;
-    this.pauseZone.setPosition(right - pb - pad, m + top0 - pad).setSize(pb + 2 * pad, pb + 2 * pad);
-    if (this.pauseZone.input) this.pauseZone.input.hitArea.setSize(pb + 2 * pad, pb + 2 * pad);
-
-    const coinX = right - pb * 2 - 4 * s;
-    this.coinIcon.setScale(s * 0.4).setPosition(coinX - 60 * s, m + top0 + pb / 2);
-    this.coinText.setFontSize(9 * s).setStroke('#1b1b2a', s * 1.5).setPosition(coinX - 50 * s, m + top0 + pb / 2).setText(`x ${this.hud.coins}`);
+    // moedas logo abaixo dos coracoes, numa plaquinha escura
+    const glyphs = ['x', ...String(this.hud.coins)];
+    while (this.coinDigits.length < glyphs.length) this.coinDigits.push(this.add.image(0, 0, 'hud-counter', 0).setOrigin(0, 0));
+    const pillY = heartsY + 16 * k + 4 * k;
+    const pillH = 14 * k;
+    const textW = glyphs.length * 7 * k - (glyphs.length - 1) * k; // numeros encostados pelo contorno
+    const pillW = 3 * k + 12 * k + 2 * k + textW + 4 * k;
+    this.coinPill.clear()
+      .fillStyle(0x1b1b2a, 1).fillRect(col + k, pillY, pillW - 2 * k, pillH).fillRect(col, pillY + k, pillW, pillH - 2 * k)
+      .fillStyle(0x2b2d48, 0.92).fillRect(col + 2 * k, pillY + k, pillW - 4 * k, pillH - 2 * k).fillRect(col + k, pillY + 2 * k, pillW - 2 * k, pillH - 4 * k);
+    this.coinIcon.setScale(k).setPosition(col + 2 * k, pillY + k);
+    let tx = col + 3 * k + 12 * k;
+    this.coinDigits.forEach((d, i) => {
+      if (i >= glyphs.length) { d.setVisible(false); return; }
+      const g = glyphs[i];
+      d.setVisible(true).setScale(k).setFrame(g === 'x' ? COUNTER.x : Number(g)).setPosition(tx, pillY + 2 * k);
+      tx += 6 * k;
+    });
   }
 
-  drawSoundButton(x, y, size, s) {
-    const g = this.soundBtn.clear();
-    g.fillStyle(0x1b1b2a, 0.75).fillRoundedRect(x, y, size, size, 3 * s);
-    // alto-falante
-    g.fillStyle(0xffffff, 1).fillRect(x + 3 * s, y + 5 * s, 2 * s, 4 * s);
-    g.fillTriangle(x + 4 * s, y + 7 * s, x + 8 * s, y + 3 * s, x + 8 * s, y + 11 * s);
-    if (isMuted()) {
-      g.lineStyle(1.5 * s, 0xff6b6b, 1).lineBetween(x + 9 * s, y + 5 * s, x + 12 * s, y + 9 * s).lineBetween(x + 12 * s, y + 5 * s, x + 9 * s, y + 9 * s);
-    } else {
-      g.lineStyle(1.2 * s, 0xffffff, 1);
-      g.beginPath().arc(x + 8 * s, y + 7 * s, 2.5 * s, -0.9, 0.9).strokePath();
-      g.beginPath().arc(x + 8 * s, y + 7 * s, 4.5 * s, -0.9, 0.9).strokePath();
-    }
+  placeZone(zone, x, y, size) {
     const pad = 6 * layout.dpr;
-    this.soundZone.setPosition(x - pad, y - pad).setSize(size + 2 * pad, size + 2 * pad);
-    if (this.soundZone.input) this.soundZone.input.hitArea.setSize(size + 2 * pad, size + 2 * pad);
+    zone.setPosition(x - pad, y - pad).setSize(size + 2 * pad, size + 2 * pad);
+    if (zone.input) zone.input.hitArea.setSize(size + 2 * pad, size + 2 * pad);
+  }
+
+  get buttonScale() {
+    return Math.max(2, Math.round(this.hudScale * 0.7));
+  }
+
+  get hudScale() {
+    return Math.max(2, Math.round(this.s * 0.7));
+  }
+
+  // ---------- retrato reagindo ao jogo ----------
+
+  react(kind) {
+    const r = REACTIONS[kind];
+    if (!r || !this.face) return;
+    const st = this.faceState;
+    const now = this.time.now;
+    const busy = st.pri >= 4 || (st.until > now && st.pri > r.pri);
+    if (busy) return;
+    if (st.timer) st.timer.remove();
+    st.timer = null;
+    st.face = r.face;
+    st.pri = r.pri;
+    st.until = r.ms ? now + r.ms : Infinity;
+    this.face.setFrame(FACE[r.face]);
+    if (r.ms) st.timer = this.time.delayedCall(r.ms, () => this.resetFace());
+    this.hopFace(kind === 'hurt' || kind === 'over' ? 'shake' : 'hop');
+  }
+
+  resetFace() {
+    const st = this.faceState;
+    if (!st) return;
+    if (st.timer) st.timer.remove();
+    st.timer = null;
+    st.face = 'feliz';
+    st.pri = 0;
+    st.until = 0;
+    if (this.face) this.face.setFrame(FACE.feliz);
+  }
+
+  // pulinho (ou tremida, quando se machuca) em passos de pixel inteiro
+  hopFace(type) {
+    const k = this.hudScale;
+    const steps = type === 'shake' ? [[-k, 0], [k, 0], [-k, 0], [k, 0], [0, 0]] : [[0, -2 * k], [0, -k], [0, 0]];
+    this.tweens.killTweensOf(this.faceHop);
+    this.faceHop.x = 0;
+    this.faceHop.y = 0;
+    steps.forEach(([x, y], i) => {
+      this.time.delayedCall(i * 55, () => {
+        this.faceHop.x = x;
+        this.faceHop.y = y;
+        if (this.faceBase) this.face.setPosition(this.faceBase.x + x, this.faceBase.y + y);
+      });
+    });
   }
 
   // ---------- controles de toque ----------

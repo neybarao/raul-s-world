@@ -372,6 +372,7 @@ export default class GameScene extends Phaser.Scene {
     this.molaBoost = true;
     this.lastGroundedAt = -9999;
     m.setFrame(1);
+    this.react('mola');
     this.time.delayedCall(160, () => m.setFrame(0));
   }
 
@@ -430,6 +431,7 @@ export default class GameScene extends Phaser.Scene {
   collectCoin(c) {
     c.body.enable = false;
     this.coinCount += 1;
+    this.react('coin');
     this.tweens.killTweensOf(c);
     this.tweens.add({ targets: c, y: c.y - 14 * U, alpha: 0, scaleX: 1, duration: 260, onComplete: () => c.destroy() });
     this.emitHud();
@@ -452,6 +454,7 @@ export default class GameScene extends Phaser.Scene {
   // inimigo amassado (pisao ou bolinha): fica achatado um instante e some
   killEnemy(e) {
     e.dead = true;
+    this.react('enemy');
     e.anims.stop();
     e.setFrame(2);
     e.body.enable = false;
@@ -462,6 +465,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.state !== 'playing' || time - this.lastThrowAt < BALL.cooldownMs) return;
     if (this.balls.countActive() >= BALL.max) return;
     this.lastThrowAt = time;
+    this.react('throw');
     // pose de arremesso: prepara (quadro 13) e solta (quadro 14); a bolinha sai da mao no 14
     this.throwUntil = time + BALL.poseMs;
     this.player.anims.stop();
@@ -538,6 +542,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.time.now < this.invulnerableUntil) return false;
     this.hearts -= 1;
     this.emitHud();
+    this.react(this.hearts <= 0 ? 'over' : 'hurt');
     if (this.hearts <= 0) {
       this.gameOver();
       if (knockDir) this.player.body.setVelocity(knockDir * 60 * U, -120 * U);
@@ -573,6 +578,7 @@ export default class GameScene extends Phaser.Scene {
   reachFlag() {
     if (this.state !== 'playing') return;
     this.state = 'won';
+    this.react('win');
     this.ending = 'run';
     this.endingAt = this.time.now;
     this.facing = 1;
@@ -703,6 +709,11 @@ export default class GameScene extends Phaser.Scene {
     body.setVelocityX(0);
     p.play('raul-cry');
     this.game.events.emit('game-over');
+  }
+
+  // o retrato do Raul no HUD reage (ver REACTIONS em UIScene.js)
+  react(kind) {
+    this.game.events.emit('face', kind);
   }
 
   emitHud() {

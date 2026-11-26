@@ -35,6 +35,18 @@ Legenda extra do mapa: `T` = mola. O recorde de moedas de cada fase fica guardad
 (tira o fundo, reduz pelo tamanho do pixel da arte e limita a paleta). Saída: `public/assets/logo.png`
 (146×68), ampliada em escala inteira no menu.
 
+## HUD
+No alto da tela: retrato do Raul numa moldura de cantos arredondados, corações ao lado e o contador de
+moedas logo abaixo deles; som e pausa no canto direito. No iPhone tudo fica um pouco abaixo da faixa
+embaçada do relógio. O retrato muda de expressão conforme o jogo (`REACTIONS` em `src/scenes/UIScene.js`):
+ri ao pegar moeda e ao chegar na mamãe, pisca ao derrotar bicho ou arremessar, se assusta na mola
+e fica triste ao se machucar.
+- `tools/make_faces.py`: recorta as 5 expressões de `art/concept/expressions-sheet.jpg` e gera
+  `public/assets/sprites/raul-faces.png` já com a moldura.
+- `tools/make_hud_icons.py`: botões de pausa e som com ícones da biblioteca
+  [Pixelarticons](https://pixelarticons.com) (MIT, instalada pelo npm), números e moedinha do contador.
+  Saídas: `public/assets/hud-buttons.png` e `hud-counter.png`.
+
 ## Música
 Trilhas chiptune originais geradas no Magnific (Google Lyria 3), recortadas em compassos inteiros
 para repetir sem emenda (originais em `art/music/`, versões do jogo em `public/assets/music/`):
