@@ -25,6 +25,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('coin', asset('sprites/coin.png'));
     this.load.spritesheet('hud-buttons', asset('hud-buttons.png'), { frameWidth: 30, frameHeight: 30 });
     this.load.spritesheet('hud-counter', asset('hud-counter.png'), { frameWidth: 12, frameHeight: 12 });
+    this.load.atlas('controls', asset('controls.png'), asset('controls.json'));
     this.load.image('logo', asset('logo.png'));
     this.load.spritesheet('bolinhas', asset('bolinhas.png'), { frameWidth: 18, frameHeight: 18 });
     this.load.spritesheet('mamae', asset('sprites/mamae.png'), { frameWidth: 88, frameHeight: 112 });

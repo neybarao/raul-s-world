@@ -60,6 +60,9 @@ tecla M) liga e desliga o som, e a escolha fica guardada no aparelho. Na pausa o
 ## Controles
 - Computador: setas ou A/D para andar, Espaço/W/↑ para pular, X para arremessar bolinha (segurando, corre também), C só arremessa, Shift só corre, P ou Esc para pausar, M para ligar/desligar o som
 - Celular: direcional em cruz para andar, A para pular, B para arremessar bolinha (segurando, o Raul também corre), START para pausar
+- Visual dos botões: sprites em pixel art no estilo de portátil antigo (bege, cruz escura, A e B magenta),
+  gerados por `tools/make_controls.py` a partir das cores de `art/concept/controls-reference.jpg`.
+  Saída: `public/assets/controls.png` + `controls.json` (atlas), ampliada em escala inteira para os pixels ficarem nítidos.
 
 ## App (PWA)
 - **Android (Chrome):** menu ⋮ → "Instalar app" ou "Adicionar à tela inicial". Abre em tela cheia.

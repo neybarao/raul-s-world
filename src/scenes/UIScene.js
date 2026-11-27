@@ -32,7 +32,18 @@ export default class UIScene extends Phaser.Scene {
     this.paused = false;
 
     this.panel = this.add.graphics();
-    this.buttons = this.add.graphics();
+    // controles de toque em pixel art (controls.png, gerado por tools/make_controls.py)
+    const ctl = (frame) => this.add.image(0, 0, 'controls', frame).setOrigin(0, 0).setVisible(false);
+    this.ctl = {
+      grille: ctl('grille'),
+      dpad: ctl('dpad'),
+      run: ctl('btn-ring'),
+      jump: ctl('btn-ring'),
+      lblRun: ctl('lbl-b'),
+      lblJump: ctl('lbl-a'),
+      start: ctl('start'),
+    };
+    this.startDown = false;
     this.face = this.add.image(0, 0, 'raul-faces', FACE.feliz).setOrigin(0, 0);
     this.faceState = { face: 'feliz', pri: 0, until: 0, timer: null };
     this.faceHop = { x: 0, y: 0 };
@@ -49,9 +60,11 @@ export default class UIScene extends Phaser.Scene {
     this.soundBtn = this.add.image(0, 0, 'hud-buttons', 1).setOrigin(0, 0);
     this.soundZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
     this.soundZone.on('pointerdown', () => { toggleMute(); this.drawHud(); });
-    this.labels = [0, 1, 2].map(() => this.add.text(0, 0, '', FONT).setOrigin(0.5).setVisible(false));
     this.startZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive();
-    this.startZone.on('pointerdown', () => this.togglePause());
+    this.startZone.on('pointerdown', () => { this.startDown = true; this.refreshControls(); this.togglePause(); });
+    const startUp = () => { if (this.startDown) { this.startDown = false; this.refreshControls(); } };
+    this.startZone.on('pointerup', startUp);
+    this.startZone.on('pointerout', startUp);
 
     const ev = this.game.events;
     const onHud = (h) => { this.hud = h; this.drawHud(); };
@@ -220,106 +233,101 @@ export default class UIScene extends Phaser.Scene {
 
   // ---------- controles de toque ----------
 
-  // Controles no estilo dos portateis antigos: direcional em cruz, A (pular), B (correr), START (pausa).
+  // Controles no estilo dos portateis antigos: direcional em cruz, A (pular), B (arremessar/correr), START (pausa).
+  // Sao sprites em pixel art ampliados por um numero inteiro (k), entao cada pixel fica nitido.
+  // Medidas em pixels do sprite: cruz de 41 px (centro em 20.5), botao de 23 px (aro de 31) com centro em 16.
   defineButtons() {
     const { width: w, height: h, portrait, hasTouch, controlsHeight: ch } = layout;
     this.pad = null;
     this.btns = [];
     this.start = null;
+    this.grillePos = null;
     if (!hasTouch) return;
     if (portrait) {
       const top = h - ch;
       const usable = ch - layout.safeBottom;
-      const cy = top + usable * 0.46;
-      const size = Math.min(ch * 0.3, w * 0.15); // meio comprimento de cada braco da cruz
-      const r = Math.min(ch * 0.15, w * 0.085);
-      this.pad = { x: w * 0.25, y: cy, size };
-      this.btns.push({ id: 'run', label: 'B', x: w * 0.67, y: cy + r * 0.55, r });
-      this.btns.push({ id: 'jump', label: 'A', x: w * 0.86, y: cy - r * 0.55, r });
-      this.start = { x: w * 0.5, y: top + usable * 0.86, w: Math.min(w * 0.16, 70 * layout.dpr), h: Math.max(10 * layout.dpr, ch * 0.055) };
+      const k = Math.max(1, Math.floor(Math.min((usable * 0.6) / 41, (w * 0.34) / 41, (w * 0.235) / 31)));
+      const cy = top + Math.max(23 * k, usable * 0.42);
+      this.k = k;
+      this.pad = { x: w * 0.23, y: cy, size: 20.5 * k };
+      this.btns.push({ id: 'run', x: w * 0.635, y: cy + 7 * k, r: 11.5 * k });
+      this.btns.push({ id: 'jump', x: w * 0.845, y: cy - 7 * k, r: 11.5 * k });
+      const low = Math.min(cy + 27 * k, top + usable - 7 * k);
+      this.start = { x: w * 0.43, y: low, w: 26 * k, h: 9 * k };
+      this.grillePos = { x: w * 0.845 + 11 * k, y: low + 6 * k };
     } else {
-      const size = Math.min(h * 0.13, 80 * layout.dpr);
-      const r = Math.min(h * 0.075, 46 * layout.dpr);
-      const cy = h - size * 1.45;
-      this.pad = { x: size * 1.5, y: cy, size };
-      this.btns.push({ id: 'run', label: 'B', x: w - r * 4.6, y: cy + r * 0.6, r });
-      this.btns.push({ id: 'jump', label: 'A', x: w - r * 1.8, y: cy - r * 0.6, r });
+      const k = Math.max(1, Math.floor(Math.min(h * 0.26, 160 * layout.dpr) / 41));
+      this.k = k;
+      const cy = h - 30 * k - layout.safeBottom;
+      this.pad = { x: 31 * k + layout.safeBottom, y: cy, size: 20.5 * k };
+      this.btns.push({ id: 'run', x: w - 54 * k, y: cy + 7 * k, r: 11.5 * k });
+      this.btns.push({ id: 'jump', x: w - 22 * k, y: cy - 7 * k, r: 11.5 * k });
     }
   }
 
+  // coloca um sprite com escala k de modo que o ponto (ox, oy) do sprite caia em (cx, cy)
+  placeCtl(img, cx, cy, ox, oy) {
+    const k = this.k;
+    img.setScale(k).setPosition(Math.round(cx - ox * k), Math.round(cy - oy * k)).setVisible(true);
+  }
+
   drawControls() {
-    const g = this.buttons;
     const { width: w, height: h, portrait, controlsHeight: ch } = layout;
+    const c = this.ctl;
     this.panel.clear();
-    g.clear();
-    this.labels.forEach((t) => t.setVisible(false));
+    Object.values(c).forEach((o) => o.setVisible(false).clearTint().setAlpha(1));
     this.startZone.setVisible(false);
     if (this.startZone.input) this.startZone.input.enabled = false;
     if (!this.pad) return;
-    const solid = portrait;
-    const a = solid ? 1 : 0.4;
-    const u = layout.dpr;
+    const k = this.k;
 
     if (portrait) {
-      // corpo do console
+      // corpo do console: faixa azul-marinho da moldura da tela, filete claro e plastico bege
       const top = h - ch;
-      this.panel.fillStyle(0x16162a, 1).fillRect(0, top, w, 6 * u);
-      this.panel.fillStyle(0xcfcabd, 1).fillRect(0, top + 6 * u, w, ch - 6 * u);
-      this.panel.fillStyle(0xe2ddd1, 1).fillRect(0, top + 6 * u, w, 3 * u);
-      // grade do alto-falante
-      for (let i = 0; i < 5; i++) {
-        const x = w - (24 + i * 9) * u;
-        this.panel.fillStyle(0xa9a394, 1).fillRoundedRect(x, h - layout.safeBottom - ch * 0.22, 4 * u, ch * 0.16, 2 * u);
+      this.panel.fillStyle(0xcdbdb0, 1).fillRect(0, top, w, ch);
+      this.panel.fillStyle(0x222f52, 1).fillRect(0, top, w, 2 * k);
+      this.panel.fillStyle(0xddd0c4, 1).fillRect(0, top + 2 * k, w, k);
+      this.placeCtl(c.grille, this.grillePos.x, this.grillePos.y, 22, 14);
+    }
+
+    this.placeCtl(c.dpad, this.pad.x, this.pad.y, 20.5, 20.5);
+    for (const b of this.btns) {
+      const img = c[b.id];
+      const lbl = b.id === 'run' ? c.lblRun : c.lblJump;
+      this.placeCtl(img, b.x, b.y, 16, 16);
+      if (portrait) {
+        // letra embaixo do botao, como no console
+        this.placeCtl(lbl, b.x, b.y + 20 * k, 3.5, 3.5);
+      } else {
+        // deitado: por cima do cenario, meio transparente, letra branca no meio do botao
+        img.setAlpha(0.6);
+        this.placeCtl(lbl, b.x, b.y, 3.5, 3.5);
+        lbl.setTintFill(0xffffff).setAlpha(0.75);
       }
     }
+    if (!portrait) c.dpad.setAlpha(0.6);
 
-    // direcional em cruz
-    const { x, y, size } = this.pad;
-    const arm = size * 0.66;
-    const shadow = Math.max(2, size * 0.06);
-    g.fillStyle(0x000000, solid ? 0.25 : 0.15)
-      .fillRoundedRect(x - size + shadow, y - arm / 2 + shadow, size * 2, arm, 4 * u)
-      .fillRoundedRect(x - arm / 2 + shadow, y - size + shadow, arm, size * 2, 4 * u);
-    g.fillStyle(0x2b2b30, a)
-      .fillRoundedRect(x - size, y - arm / 2, size * 2, arm, 4 * u)
-      .fillRoundedRect(x - arm / 2, y - size, arm, size * 2, 4 * u);
-    const lit = 0x55555e;
-    if (touch.left) g.fillStyle(lit, a).fillRoundedRect(x - size, y - arm / 2, size - arm / 2, arm, 4 * u);
-    if (touch.right) g.fillStyle(lit, a).fillRoundedRect(x + arm / 2, y - arm / 2, size - arm / 2, arm, 4 * u);
-    g.fillStyle(0x1e1e22, a).fillCircle(x, y, arm * 0.28);
-    const t = arm * 0.22;
-    const tri = 0x6b6b74;
-    g.fillStyle(tri, a)
-      .fillTriangle(x - size + t * 0.9, y, x - size + t * 2.3, y - t, x - size + t * 2.3, y + t)
-      .fillTriangle(x + size - t * 0.9, y, x + size - t * 2.3, y - t, x + size - t * 2.3, y + t)
-      .fillTriangle(x, y - size + t * 0.9, x - t, y - size + t * 2.3, x + t, y - size + t * 2.3)
-      .fillTriangle(x, y + size - t * 0.9, x - t, y + size - t * 2.3, x + t, y + size - t * 2.3);
-
-    // botoes A e B
-    let li = 0;
-    for (const b of this.btns) {
-      const on = touch[b.id];
-      if (portrait) g.fillStyle(0xb9b3a5, 1).fillCircle(b.x, b.y, b.r * 1.18);
-      g.fillStyle(0x000000, solid ? 0.3 : 0.15).fillCircle(b.x + shadow, b.y + shadow, b.r);
-      g.fillStyle(on ? 0xd9407f : 0xa3195b, a).fillCircle(b.x, b.y, b.r);
-      g.fillStyle(0xffffff, on ? 0.1 : 0.22 * a).fillCircle(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.35);
-      const lbl = this.labels[li++];
-      lbl.setText(b.label).setFontSize(Math.round(b.r * 0.62)).setVisible(true).setAlpha(solid ? 1 : 0.6)
-        .setPosition(b.x + (portrait ? b.r * 0.9 : 0), b.y + (portrait ? b.r * 1.15 : 0))
-        .setColor(portrait ? '#2b2a6b' : '#ffffff').setStroke(portrait ? '#cfcabd' : '#1b1b2a', portrait ? 0 : 3 * u);
-    }
-
-    // START (pausa)
     if (this.start) {
       const st = this.start;
-      g.fillStyle(0x8f8a7e, 1).fillRoundedRect(st.x - st.w / 2, st.y - st.h / 2, st.w, st.h, st.h / 2);
-      const lbl = this.labels[li++];
-      lbl.setText('START').setFontSize(Math.round(Math.max(9 * u, st.h * 0.95))).setVisible(true).setAlpha(1)
-        .setPosition(st.x, st.y + st.h * 1.3).setColor('#2b2a6b').setStroke('#cfcabd', 0);
-      this.startZone.setVisible(true).setPosition(st.x - st.w / 2 - 10 * u, st.y - st.h / 2 - 12 * u).setSize(st.w + 20 * u, st.h + 30 * u);
-      this.startZone.input.hitArea.setSize(st.w + 20 * u, st.h + 30 * u);
+      this.placeCtl(c.start, st.x, st.y, 16, 6.5);
+      const zw = st.w + 24 * layout.dpr;
+      const zh = st.h + 24 * layout.dpr;
+      this.startZone.setVisible(true).setPosition(st.x - zw / 2, st.y - zh / 2).setSize(zw, zh);
+      this.startZone.input.hitArea.setSize(zw, zh);
       this.startZone.input.enabled = true;
     }
+    this.refreshControls();
+  }
+
+  // troca so os quadros (solto/apertado), sem recalcular nada
+  refreshControls() {
+    if (!this.pad) return;
+    const c = this.ctl;
+    const ring = layout.portrait ? 'btn-ring' : 'btn';
+    c.dpad.setFrame(touch.left ? 'dpad-left' : touch.right ? 'dpad-right' : 'dpad');
+    c.run.setFrame(touch.run ? `${ring}-down` : ring);
+    c.jump.setFrame(touch.jump ? `${ring}-down` : ring);
+    c.start.setFrame(this.startDown ? 'start-down' : 'start');
   }
 
   update() {
@@ -345,7 +353,7 @@ export default class UIScene extends Phaser.Scene {
       }
       if (best) touch[best.id] = true;
     }
-    if (['left', 'right', 'jump', 'run'].some((k) => prev[k] !== touch[k])) this.drawControls();
+    if (['left', 'right', 'jump', 'run'].some((k) => prev[k] !== touch[k])) this.refreshControls();
   }
 
   // ---------- pausa e telas de mensagem ----------
